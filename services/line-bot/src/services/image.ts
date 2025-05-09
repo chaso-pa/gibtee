@@ -1,9 +1,8 @@
 import { ImageEventMessage } from "@line/bot-sdk";
-import axios from "axios";
 import { lineClient } from "./line.js";
-import { config } from "../config/index.js";
 import { logger } from "../utils/logger.js";
 import { prisma } from "../lib/prisma.js";
+import { uploadBufferToS3, getS3SignedUrl } from "../utils/s3.js";
 import {
 	updateUserConversationState,
 	ConversationState,
@@ -32,16 +31,13 @@ export const handleImageMessage = async (
 		}
 		const imageBuffer = Buffer.concat(chunks);
 
-		// 3. Base64エンコーディング
-		const base64Image = imageBuffer.toString("base64");
-
-		// 4. ユーザーに処理中メッセージを送信
+		// 3. ユーザーに処理中メッセージを送信
 		await lineClient.replyMessage(replyToken, {
 			type: "text",
 			text: "画像を受け取りました！ジブリ風に変換中です...",
 		});
 
-		// 5. 画像データをデータベースに保存
+		// 4. ユーザー情報を取得
 		const user = await prisma.user.findUnique({
 			where: { lineUserId: userId },
 		});
@@ -50,28 +46,42 @@ export const handleImageMessage = async (
 			throw new Error("ユーザーが見つかりません");
 		}
 
-		// 仮の画像パスを生成（実際には画像処理サービスで保存）
-		const originalImagePath = `users/${userId}/images/${Date.now()}_original.jpg`;
+		// 5. S3バケットに画像をアップロード
+		const timestamp = Date.now();
+		const originalImageKey = await uploadBufferToS3(
+			imageBuffer,
+			`${timestamp}_original.jpg`,
+			`users/${userId}/images/`,
+		);
 
-		// 画像レコードを作成
+		// 6. 署名付きURLを生成（24時間有効）
+		const originalImageUrl = await getS3SignedUrl(
+			originalImageKey,
+			24 * 60 * 60,
+		);
+
+		// 7. 画像レコードをデータベースに保存
 		const image = await prisma.image.create({
 			data: {
 				userId: user.id,
-				originalImagePath: originalImagePath,
+				originalImagePath: originalImageKey,
 				status: "pending",
 			},
 		});
 
-		// 会話状態を更新
+		logger.info(`画像レコード作成: ${image.id}, パス: ${originalImageKey}`);
+
+		// 8. 会話状態を更新
 		await updateUserConversationState(
 			userId,
 			ConversationState.IMAGE_PROCESSING,
 			{
 				imageId: image.id,
+				originalImageKey, // URLではなくキーを保存
 			},
 		);
 
-		// 6. MCPフェーズでは画像処理サービスへの連携を擬似的に表現
+		// 9. MCPフェーズでは画像処理サービスへの連携を擬似的に表現
 		// 実際の実装ではここで画像処理サービスへリクエストを送信
 
 		logger.info(`画像処理サービス呼び出し予定: imageId=${image.id}`);
@@ -79,10 +89,24 @@ export const handleImageMessage = async (
 		// 疑似的な遅延処理（実際の実装では削除）
 		setTimeout(async () => {
 			try {
-				// 処理完了後の応答（実際の実装ではコールバックかWebhookで受け取る）
+				// 変換されたジブリ風画像のURLをS3から取得する代わりに、オリジナル画像のURLを再利用（MCPフェーズのみ）
+				// 署名付きURLは一時的なので、必要なタイミングで再生成
+				const ghibliImageUrl = await getS3SignedUrl(
+					originalImageKey,
+					24 * 60 * 60,
+				);
+
+				// 変換処理完了の通知
 				await lineClient.pushMessage(userId, {
 					type: "text",
-					text: "【デモ】ジブリ風変換が完了しました！（実際の画像処理は後のスプリントで実装されます）",
+					text: "【デモ】ジブリ風変換が完了しました！下記が変換後の画像です。\n\n※MCPフェーズでは元画像をそのまま表示しています。",
+				});
+
+				// 画像メッセージの送信
+				await lineClient.pushMessage(userId, {
+					type: "image",
+					originalContentUrl: ghibliImageUrl,
+					previewImageUrl: ghibliImageUrl,
 				});
 
 				// 会話状態をプレビュー状態に更新
@@ -91,7 +115,7 @@ export const handleImageMessage = async (
 					ConversationState.TSHIRT_PREVIEW,
 					{
 						imageId: image.id,
-						ghibliImagePath: `users/${userId}/images/${Date.now()}_ghibli.jpg`,
+						originalImageKey, // URLではなくキーを保存
 					},
 				);
 
@@ -107,11 +131,11 @@ export const handleImageMessage = async (
 					ConversationState.SIZE_SELECTION,
 					{
 						imageId: image.id,
-						ghibliImagePath: `users/${userId}/images/${Date.now()}_ghibli.jpg`,
+						originalImageKey, // URLではなくキーを保存
 					},
 				);
-			} catch (err) {
-				logger.error("疑似レスポンスエラー:", err);
+			} catch (err: any) {
+				logger.error(`疑似レスポンスエラー: ${err.message}`);
 			}
 		}, 3000);
 	} catch (error: any) {

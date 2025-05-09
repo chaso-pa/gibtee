@@ -27,6 +27,14 @@ export const config = {
 			"mysql://username:password@localhost:3306/gibtee",
 	},
 
+	// AWS設定
+	aws: {
+		region: process.env.AWS_REGION || "ap-southeast-1",
+		accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+		secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+		s3Bucket: process.env.AWS_S3_BUCKET || "",
+	},
+
 	// 画像処理サービス
 	imageProcessor: {
 		url: process.env.IMAGE_PROCESSOR_URL || "http://image-processor:3001",
