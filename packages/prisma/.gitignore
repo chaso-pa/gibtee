@@ -1,0 +1,21 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+# 環境変数
+.env
+.env.*
+!.env.example
+
+# 依存関係
+node_modules/
+
+# 自動生成されるPrismaクライアント
+node_modules/@prisma/client/
+
+# マイグレーションの一時ファイル
+migrations/*_*
+migrations/*/
+
+# ログ
+*.log

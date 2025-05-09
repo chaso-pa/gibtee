@@ -1,0 +1,28 @@
+# ビルド
+dist/
+build/
+
+# 環境変数
+.env
+.env.*
+!.env.example
+
+# 依存関係
+node_modules/
+
+# アップロードされた一時ファイル
+uploads/
+temp/
+
+# ログ
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# カバレッジレポート
+coverage/
+
+# TypeScript
+*.tsbuildinfo
