@@ -1,11 +1,13 @@
 import { ImageEventMessage } from "@line/bot-sdk";
 import axios from "axios";
-import { lineClient } from "./line";
-import { config } from "../config";
-import { logger } from "../utils/logger";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { lineClient } from "./line.js";
+import { config } from "../config/index.js";
+import { logger } from "../utils/logger.js";
+import { prisma } from "../lib/prisma.js";
+import {
+	updateUserConversationState,
+	ConversationState,
+} from "./conversation.js";
 
 /**
  * LINE画像メッセージを処理する
@@ -14,6 +16,8 @@ export const handleImageMessage = async (
 	userId: string,
 	message: ImageEventMessage,
 	replyToken: string,
+	currentState: ConversationState,
+	context: any,
 ): Promise<void> => {
 	try {
 		logger.info(`画像メッセージ受信: ${message.id} (${userId})`);
@@ -58,6 +62,15 @@ export const handleImageMessage = async (
 			},
 		});
 
+		// 会話状態を更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.IMAGE_PROCESSING,
+			{
+				imageId: image.id,
+			},
+		);
+
 		// 6. MCPフェーズでは画像処理サービスへの連携を擬似的に表現
 		// 実際の実装ではここで画像処理サービスへリクエストを送信
 
@@ -71,6 +84,32 @@ export const handleImageMessage = async (
 					type: "text",
 					text: "【デモ】ジブリ風変換が完了しました！（実際の画像処理は後のスプリントで実装されます）",
 				});
+
+				// 会話状態をプレビュー状態に更新
+				await updateUserConversationState(
+					userId,
+					ConversationState.TSHIRT_PREVIEW,
+					{
+						imageId: image.id,
+						ghibliImagePath: `users/${userId}/images/${Date.now()}_ghibli.jpg`,
+					},
+				);
+
+				// Tシャツ選択肢を提示（スタブ実装）
+				await lineClient.pushMessage(userId, {
+					type: "text",
+					text: "Tシャツのサイズを選択してください：\nS / M / L / XL\n\n（MCPフェーズではテキストで「S」などと入力してください）",
+				});
+
+				// 会話状態をサイズ選択に更新
+				await updateUserConversationState(
+					userId,
+					ConversationState.SIZE_SELECTION,
+					{
+						imageId: image.id,
+						ghibliImagePath: `users/${userId}/images/${Date.now()}_ghibli.jpg`,
+					},
+				);
 			} catch (err) {
 				logger.error("疑似レスポンスエラー:", err);
 			}
@@ -83,16 +122,8 @@ export const handleImageMessage = async (
 			type: "text",
 			text: "申し訳ありません。画像の処理中にエラーが発生しました。しばらく経ってからもう一度お試しください。",
 		});
-	}
-};
 
-/**
- * 画像処理サービスに画像変換をリクエスト
- * (次のスプリントで実装予定)
- */
-export const requestImageConversion = async (
-	imageId: number,
-	base64Image: string,
-) => {
-	// 次のスプリントで実装予定
+		// 会話状態をリセット
+		await updateUserConversationState(userId, ConversationState.WAITING);
+	}
 };

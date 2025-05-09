@@ -1,7 +1,11 @@
 import { FollowEvent, UnfollowEvent } from "@line/bot-sdk";
-import { getUserProfile, sendTextMessage } from "../services/line";
-import { saveUserToDB, deactivateUser } from "../services/user";
-import { logger } from "../utils/logger";
+import { getUserProfile, sendTextMessage } from "../services/line.js";
+import { saveUserToDB, deactivateUser } from "../services/user.js";
+import {
+	updateUserConversationState,
+	ConversationState,
+} from "../services/conversation.js";
+import { logger } from "../utils/logger.js";
 
 /**
  * フォローイベント（友だち追加）を処理する
@@ -16,6 +20,12 @@ export const handleFollow = async (event: FollowEvent): Promise<void> => {
 
 		// ユーザー情報をDBに保存
 		await saveUserToDB(userId, profile);
+
+		// 会話状態を初期挨拶に設定
+		await updateUserConversationState(
+			userId,
+			ConversationState.INITIAL_GREETING,
+		);
 
 		// ウェルカムメッセージを送信
 		await sendTextMessage(
