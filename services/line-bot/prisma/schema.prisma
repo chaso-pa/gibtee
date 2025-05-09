@@ -22,6 +22,7 @@ model User {
   // リレーション
   images          Image[]
   orders          Order[]
+  conversations   Conversation[]
 
   @@index([lineUserId])
   @@map("users")
@@ -73,6 +74,21 @@ model Order {
   @@index([status])
   @@index([userId])
   @@map("orders")
+}
+
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  state     String    @default("WAITING")
+  context   Json?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // リレーション
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("conversations")
 }
 
 enum UserStatus {
