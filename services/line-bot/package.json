@@ -1,7 +1,14 @@
 {
   "name": "line-bot",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "dev": "prisma generate && tsx watch src/app.ts",
+    "lint": "eslint . --ext .ts",
+    "test": "jest"
+  },
   "license": "MIT",
   "dependencies": {
     "@line/bot-sdk": "^9.9.0",
@@ -17,7 +24,9 @@
     "@types/express": "^5.0.1",
     "@types/node": "^22.15.15",
     "nodemon": "^3.1.10",
+    "prisma": "^6.7.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
 }

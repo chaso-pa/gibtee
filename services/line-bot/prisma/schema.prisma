@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  lineUserId      String    @unique @map("line_user_id")
+  displayName     String?   @map("display_name")
+  profileImageUrl String?   @map("profile_image_url")
+  status          UserStatus @default(active)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // リレーション
+  images          Image[]
+  orders          Order[]
+
+  @@index([lineUserId])
+  @@map("users")
+}
+
+model Image {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @map("user_id")
+  originalImagePath String    @map("original_image_path")
+  ghibliImagePath   String?   @map("ghibli_image_path")
+  tshirtPreviewPath String?   @map("tshirt_preview_path")
+  status            ImageStatus @default(pending)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // リレーション
+  user              User      @relation(fields: [userId], references: [id])
+  orders            Order[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("images")
+}
+
+model Order {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @map("user_id")
+  imageId           Int       @map("image_id")
+  orderNumber       String    @unique @map("order_number")
+  status            OrderStatus @default(pending)
+  shirtSize         ShirtSize
+  quantity          Int       @default(1)
+  price             Decimal   @db.Decimal(10, 2)
+  shippingAddress   String?   @map("shipping_address")
+  shippingPostalCode String?  @map("shipping_postal_code")
+  recipientName     String?   @map("recipient_name")
+  recipientPhone    String?   @map("recipient_phone")
+  notes             String?
+  paymentId         String?   @map("payment_id")
+  paymentMethod     String?   @map("payment_method")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // リレーション
+  user              User      @relation(fields: [userId], references: [id])
+  image             Image     @relation(fields: [imageId], references: [id])
+
+  @@index([orderNumber])
+  @@index([status])
+  @@index([userId])
+  @@map("orders")
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+enum ImageStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum OrderStatus {
+  pending
+  paid
+  processing
+  printing
+  shipped
+  delivered
+  cancelled
+}
+
+enum ShirtSize {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+}
