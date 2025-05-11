@@ -7,6 +7,11 @@ import {
 	updateUserConversationState,
 	ConversationState,
 } from "./conversation.js";
+import { convertToGhibliStyle } from "./image-processor.js";
+import {
+	createImageConversionResultFlex,
+	createTshirtPreviewFlex,
+} from "./flex-message.js";
 
 /**
  * LINE画像メッセージを処理する
@@ -65,7 +70,7 @@ export const handleImageMessage = async (
 			data: {
 				userId: user.id,
 				originalImagePath: originalImageKey,
-				status: "pending",
+				status: "processing",
 			},
 		});
 
@@ -77,67 +82,61 @@ export const handleImageMessage = async (
 			ConversationState.IMAGE_PROCESSING,
 			{
 				imageId: image.id,
-				originalImageKey, // URLではなくキーを保存
+				originalImageKey,
 			},
 		);
 
-		// 9. MCPフェーズでは画像処理サービスへの連携を擬似的に表現
-		// 実際の実装ではここで画像処理サービスへリクエストを送信
+		try {
+			// 9. 画像処理サービスで画像を変換
+			const { convertedImageKey, signedUrl: ghibliImageUrl } =
+				await convertToGhibliStyle(originalImageKey, userId);
 
-		logger.info(`画像処理サービス呼び出し予定: imageId=${image.id}`);
+			// 10. 変換完了したら画像レコードを更新
+			await prisma.image.update({
+				where: { id: image.id },
+				data: {
+					ghibliImagePath: convertedImageKey,
+					status: "completed",
+				},
+			});
 
-		// 疑似的な遅延処理（実際の実装では削除）
-		setTimeout(async () => {
-			try {
-				// 変換されたジブリ風画像のURLをS3から取得する代わりに、オリジナル画像のURLを再利用（MCPフェーズのみ）
-				// 署名付きURLは一時的なので、必要なタイミングで再生成
-				const ghibliImageUrl = await getS3SignedUrl(
+			// 11. 変換結果をFlexメッセージで送信
+			const conversionResultFlex = createImageConversionResultFlex(
+				originalImageUrl,
+				ghibliImageUrl,
+			);
+
+			await lineClient.pushMessage(userId, conversionResultFlex);
+
+			// 12. 会話状態をプレビュー状態に更新
+			await updateUserConversationState(
+				userId,
+				ConversationState.TSHIRT_PREVIEW,
+				{
+					imageId: image.id,
 					originalImageKey,
-					24 * 60 * 60,
-				);
+					ghibliImageKey: convertedImageKey,
+				},
+			);
+		} catch (conversionError: any) {
+			logger.error(`画像変換エラー: ${conversionError.message}`);
 
-				// 変換処理完了の通知
-				await lineClient.pushMessage(userId, {
-					type: "text",
-					text: "【デモ】ジブリ風変換が完了しました！下記が変換後の画像です。\n\n※MCPフェーズでは元画像をそのまま表示しています。",
-				});
+			// 変換失敗時の処理
+			await prisma.image.update({
+				where: { id: image.id },
+				data: {
+					status: "failed",
+				},
+			});
 
-				// 画像メッセージの送信
-				await lineClient.pushMessage(userId, {
-					type: "image",
-					originalContentUrl: ghibliImageUrl,
-					previewImageUrl: ghibliImageUrl,
-				});
+			await lineClient.pushMessage(userId, {
+				type: "text",
+				text: "申し訳ありません。画像の変換中にエラーが発生しました。別の画像で試してみてください。",
+			});
 
-				// 会話状態をプレビュー状態に更新
-				await updateUserConversationState(
-					userId,
-					ConversationState.TSHIRT_PREVIEW,
-					{
-						imageId: image.id,
-						originalImageKey, // URLではなくキーを保存
-					},
-				);
-
-				// Tシャツ選択肢を提示（スタブ実装）
-				await lineClient.pushMessage(userId, {
-					type: "text",
-					text: "Tシャツのサイズを選択してください：\nS / M / L / XL\n\n（MCPフェーズではテキストで「S」などと入力してください）",
-				});
-
-				// 会話状態をサイズ選択に更新
-				await updateUserConversationState(
-					userId,
-					ConversationState.SIZE_SELECTION,
-					{
-						imageId: image.id,
-						originalImageKey, // URLではなくキーを保存
-					},
-				);
-			} catch (err: any) {
-				logger.error(`疑似レスポンスエラー: ${err.message}`);
-			}
-		}, 3000);
+			// 会話状態をリセット
+			await updateUserConversationState(userId, ConversationState.WAITING);
+		}
 	} catch (error: any) {
 		logger.error(`画像処理エラー: ${error.message}`);
 
