@@ -48,3 +48,48 @@ export const convertToGhibliStyle = async (
 		throw new Error(`ジブリ風変換に失敗しました: ${error.message}`);
 	}
 };
+
+/**
+ * Tシャツプレビューを生成する
+ * @param imageKey S3の画像キー
+ * @param color Tシャツの色
+ * @param size Tシャツのサイズ
+ * @param userId ユーザーID
+ * @returns プレビュー画像情報
+ */
+export const generateTshirtPreview = async (
+	imageKey: string,
+	color: string,
+	size: string,
+	userId: string,
+): Promise<{
+	previewImageKey: string;
+	signedUrl: string;
+}> => {
+	try {
+		logger.info(
+			`Tシャツプレビュー生成リクエスト送信: ${imageKey}, 色=${color}, サイズ=${size}`,
+		);
+
+		const response = await imageProcessorClient.post("/tshirt-preview", {
+			imageKey,
+			color,
+			size,
+			userId,
+		});
+
+		if (!response.data.success) {
+			throw new Error("Tシャツプレビュー生成に失敗しました");
+		}
+
+		logger.info(`Tシャツプレビュー生成成功: ${response.data.previewImageKey}`);
+
+		return {
+			previewImageKey: response.data.previewImageKey,
+			signedUrl: response.data.signedUrl,
+		};
+	} catch (error: any) {
+		logger.error(`Tシャツプレビュー生成エラー: ${error.message}`);
+		throw new Error(`Tシャツプレビュー生成に失敗しました: ${error.message}`);
+	}
+};

@@ -19,6 +19,7 @@ import {
 } from "../services/flex-message.js";
 import { getS3SignedUrl } from "../utils/s3.js";
 import { lineClient } from "../services/line.js";
+import { generateTshirtPreview } from "@/services/image-processor.js";
 
 export const handleMessage = async (event: MessageEvent): Promise<void> => {
 	const { replyToken, source, message } = event;
@@ -173,18 +174,28 @@ const handleTshirtCreationRequest = async (
 			throw new Error("画像キーが見つかりません");
 		}
 
-		// Tシャツプレビューを生成（MCPではオリジナル画像をそのまま使用）
-		const previewImageUrl = await getS3SignedUrl(
+		// デフォルトカラーと、サイズ
+		const defaultColor = "white";
+		const defaultSize = "M";
+
+		// Tシャツプレビューを生成
+		const { signedUrl: previewImageUrl } = await generateTshirtPreview(
 			context.ghibliImageKey,
-			24 * 60 * 60,
+			defaultColor,
+			defaultSize,
+			userId,
 		);
 
-		// デフォルトカラー（白）のTシャツプレビューを送信
-		const tshirtPreviewFlex = createTshirtPreviewFlex(previewImageUrl, "white");
+		// Tシャツプレビューを送信
+		const tshirtPreviewFlex = createTshirtPreviewFlex(
+			previewImageUrl,
+			defaultColor,
+		);
 		await lineClient.pushMessage(userId, tshirtPreviewFlex);
 
 		// コンテキストに選択された色を追加
-		context.selectedColor = "white";
+		context.selectedColor = defaultColor;
+		context.selectedSize = defaultSize;
 		await updateUserConversationState(
 			userId,
 			ConversationState.SIZE_SELECTION,
@@ -255,10 +266,15 @@ const handleColorSelection = async (
 			return;
 		}
 
-		// 画像URLを取得
-		const previewImageUrl = await getS3SignedUrl(
+		// 選択されたサイズ（コンテキストから取得、なければデフォルト）
+		const selectedSize = context.selectedSize || "M";
+
+		// Tシャツプレビューを生成
+		const { signedUrl: previewImageUrl } = await generateTshirtPreview(
 			context.ghibliImageKey,
-			24 * 60 * 60,
+			selectedColor,
+			selectedSize,
+			userId,
 		);
 
 		// 選択された色でTシャツプレビューを更新

@@ -1,5 +1,8 @@
 import express from "express";
-import { convertImage, generateTshirtPreview } from "../controllers/images.js";
+import {
+	convertImage,
+	generateTshirtPreviewController,
+} from "../controllers/images.js";
 
 const router = express.Router();
 
@@ -12,6 +15,6 @@ router.get("/health", (req, res) => {
 router.post("/convert", convertImage);
 
 // Tシャツプレビュー生成エンドポイント
-router.post("/tshirt-preview", generateTshirtPreview);
+router.post("/tshirt-preview", generateTshirtPreviewController);
 
 export default router;

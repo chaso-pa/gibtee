@@ -52,15 +52,14 @@ export const createImageConversionResultFlex = (
 					contents: [
 						{
 							type: "text",
-							text: "このデザインでTシャツを作りますか？",
-							weight: "bold",
-							size: "lg",
+							text: "ジブリ風画像をTシャツにすることができます。",
+							size: "md",
 							wrap: true,
 							margin: "md",
 						},
 						{
 							type: "text",
-							text: "気に入らない場合は別の写真を送ることもできます。",
+							text: "別の写真を送ることもできます。",
 							size: "sm",
 							color: "#999999",
 							margin: "md",
@@ -161,7 +160,7 @@ export const createImageConversionResultFlex = (
 
 	return {
 		type: "flex",
-		altText: "ジブリ風変換結果",
+		altText: "Tシャツにしますか？",
 		contents: container,
 	};
 };

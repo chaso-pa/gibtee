@@ -100,24 +100,39 @@ export const handleImageMessage = async (
 				},
 			});
 
-			// 11. 変換結果をFlexメッセージで送信
-			const conversionResultFlex = createImageConversionResultFlex(
-				originalImageUrl,
-				ghibliImageUrl,
-			);
+			// 11. まず変換画像を画像メッセージとして送信
+			await lineClient.pushMessage(userId, {
+				type: "image",
+				originalContentUrl: ghibliImageUrl,
+				previewImageUrl: ghibliImageUrl,
+			});
 
-			await lineClient.pushMessage(userId, conversionResultFlex);
+			// 12. 変換完了テキストを送信
+			await lineClient.pushMessage(userId, {
+				type: "text",
+				text: "変換完了！ジブリ風画像が作成されました！",
+			});
 
-			// 12. 会話状態をプレビュー状態に更新
-			await updateUserConversationState(
-				userId,
-				ConversationState.TSHIRT_PREVIEW,
-				{
-					imageId: image.id,
-					originalImageKey,
-					ghibliImageKey: convertedImageKey,
-				},
-			);
+			// 13. 少し間を空けてから詳細な変換結果をFlexメッセージで送信
+			setTimeout(async () => {
+				const conversionResultFlex = createImageConversionResultFlex(
+					originalImageUrl,
+					ghibliImageUrl,
+				);
+
+				await lineClient.pushMessage(userId, conversionResultFlex);
+
+				// 会話状態をプレビュー状態に更新
+				await updateUserConversationState(
+					userId,
+					ConversationState.TSHIRT_PREVIEW,
+					{
+						imageId: image.id,
+						originalImageKey,
+						ghibliImageKey: convertedImageKey,
+					},
+				);
+			}, 1000); // 1秒後に送信
 		} catch (conversionError: any) {
 			logger.error(`画像変換エラー: ${conversionError.message}`);
 

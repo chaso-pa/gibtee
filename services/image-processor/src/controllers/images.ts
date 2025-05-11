@@ -6,6 +6,11 @@ import {
 	generateSignedUrl,
 	getObjectFromS3,
 } from "../utils/s3.js";
+import {
+	generateTshirtPreview,
+	normalizeColor,
+	normalizeSize,
+} from "../services/tshirt-preview.js";
 import { logger } from "../utils/logger.js";
 
 /**
@@ -66,29 +71,53 @@ export const convertImage = async (
 
 /**
  * Tシャツプレビューを生成する
- * (スタブ実装 - Sprint 2の後半で実装予定)
  */
-export const generateTshirtPreview = async (
+export const generateTshirtPreviewController = async (
 	req: Request,
 	res: Response,
 ): Promise<void> => {
 	try {
-		const { imageKey, color, size } = req.body;
+		const { imageKey, color, size, userId } = req.body;
 
 		if (!imageKey) {
 			res.status(400).json({ error: "画像キーが指定されていません" });
 			return;
 		}
 
-		// スタブ実装 - 単に元の画像を返す
-		const signedUrl = await generateSignedUrl(imageKey, 24 * 60 * 60);
+		// S3から画像を取得
+		logger.info(`S3から画像を取得: ${imageKey}`);
+		const imageBuffer = await getObjectFromS3(imageKey);
 
+		// カラーと、サイズの標準化
+		const normalizedColor = normalizeColor(color || "white");
+		const normalizedSize = normalizeSize(size || "M");
+
+		// Tシャツプレビューを生成
+		const previewBuffer = await generateTshirtPreview(
+			imageBuffer,
+			normalizedColor,
+			normalizedSize,
+		);
+
+		// プレビュー画像をS3にアップロード
+		const userPrefix = userId ? `users/${userId}/previews/` : "previews/";
+		const previewImageKey = await uploadBufferToS3(
+			previewBuffer,
+			`tshirt_preview_${normalizedColor}_${normalizedSize}.png`,
+			userPrefix,
+		);
+
+		// 署名付きURLを生成
+		const signedUrl = await generateSignedUrl(previewImageKey, 24 * 60 * 60);
+
+		// レスポンスを返す
 		res.status(200).json({
 			success: true,
-			previewImageKey: imageKey,
+			originalImageKey: imageKey,
+			previewImageKey,
 			signedUrl,
-			color: color || "white",
-			size: size || "M",
+			color: normalizedColor,
+			size: normalizedSize,
 		});
 	} catch (error: any) {
 		logger.error(`Tシャツプレビュー生成エラー: ${error.message}`);

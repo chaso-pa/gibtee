@@ -48,27 +48,37 @@ model Image {
 }
 
 model Order {
-  id                Int       @id @default(autoincrement())
-  userId            Int       @map("user_id")
-  imageId           Int       @map("image_id")
-  orderNumber       String    @unique @map("order_number")
-  status            OrderStatus @default(pending)
-  shirtSize         ShirtSize
-  quantity          Int       @default(1)
-  price             Decimal   @db.Decimal(10, 2)
-  shippingAddress   String?   @map("shipping_address")
-  shippingPostalCode String?  @map("shipping_postal_code")
-  recipientName     String?   @map("recipient_name")
-  recipientPhone    String?   @map("recipient_phone")
-  notes             String?
-  paymentId         String?   @map("payment_id")
-  paymentMethod     String?   @map("payment_method")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id                  Int       @id @default(autoincrement())
+  userId              Int       @map("user_id")
+  imageId             Int       @map("image_id")
+  orderNumber         String    @unique @map("order_number")
+  status              OrderStatus @default(pending)
+  shirtSize           ShirtSize
+  shirtColor          ShirtColor @default(white)
+  quantity            Int       @default(1)
+  price               Decimal   @db.Decimal(10, 2)
+
+  // 配送先情報
+  recipientName       String?   @map("recipient_name")
+  recipientPhone      String?   @map("recipient_phone")
+  postalCode          String?   @map("postal_code")
+  prefecture          String?
+  city                String?
+  streetAddress       String?   @map("street_address")
+  buildingName        String?   @map("building_name")
+
+  // 支払い情報
+  paymentId           String?   @map("payment_id")
+  paymentMethod       PaymentMethod? @map("payment_method")
+
+  // その他
+  notes               String?
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   // リレーション
-  user              User      @relation(fields: [userId], references: [id])
-  image             Image     @relation(fields: [imageId], references: [id])
+  user                User      @relation(fields: [userId], references: [id])
+  image               Image     @relation(fields: [imageId], references: [id])
 
   @@index([orderNumber])
   @@index([status])
@@ -89,6 +99,22 @@ model Conversation {
 
   @@index([userId])
   @@map("conversations")
+}
+
+// Tシャツカラーの定義
+enum ShirtColor {
+  white
+  black
+  navy
+  red
+}
+
+// 支払い方法の定義
+enum PaymentMethod {
+  credit_card
+  line_pay
+  convenience_store
+  bank_transfer
 }
 
 enum UserStatus {
