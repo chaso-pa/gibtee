@@ -115,6 +115,12 @@ export const createImageConversionResultFlex = (
 							size: "xl",
 							color: "#ffffff",
 						},
+						{
+							type: "text",
+							text: "←スワイプして変換後の画像を見る",
+							color: "#ffffffcc",
+							size: "md",
+						},
 					],
 					backgroundColor: "#888888",
 					paddingTop: "md",
