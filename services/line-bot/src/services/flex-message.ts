@@ -449,3 +449,682 @@ export const createColorSelectionFlex = (): FlexMessage => {
 		contents: container,
 	};
 };
+
+/**
+ * 数量選択用のFlexメッセージを作成
+ */
+export const createQuantitySelectionFlex = (): FlexMessage => {
+	logger.info("数量選択 Flexメッセージ作成");
+
+	const container: FlexContainer = {
+		type: "bubble",
+		header: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "数量を選択",
+					weight: "bold",
+					size: "xl",
+					align: "center",
+				},
+			],
+			paddingTop: "md",
+			paddingBottom: "md",
+		},
+		body: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "希望の数量を選択してください",
+					size: "md",
+					wrap: true,
+					margin: "md",
+				},
+				{
+					type: "box",
+					layout: "vertical",
+					margin: "lg",
+					contents: [
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "1枚",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: "3,980円",
+									size: "md",
+									align: "end",
+									flex: 2,
+								},
+							],
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "2枚",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: "7,500円（460円お得）",
+									size: "md",
+									align: "end",
+									flex: 2,
+								},
+							],
+							margin: "md",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "3枚以上",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: "3,500円/枚",
+									size: "md",
+									align: "end",
+									flex: 2,
+								},
+							],
+							margin: "md",
+						},
+					],
+				},
+			],
+			paddingAll: "12px",
+		},
+		footer: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "box",
+					layout: "horizontal",
+					contents: [
+						{
+							type: "button",
+							action: {
+								type: "message",
+								label: "1",
+								text: "1枚",
+							},
+							style: "primary",
+							height: "sm",
+						},
+						{
+							type: "button",
+							action: {
+								type: "message",
+								label: "2",
+								text: "2枚",
+							},
+							style: "primary",
+							height: "sm",
+						},
+					],
+					spacing: "md",
+				},
+				{
+					type: "box",
+					layout: "horizontal",
+					contents: [
+						{
+							type: "button",
+							action: {
+								type: "message",
+								label: "3",
+								text: "3枚",
+							},
+							style: "primary",
+							height: "sm",
+						},
+						{
+							type: "button",
+							action: {
+								type: "message",
+								label: "4",
+								text: "4枚",
+							},
+							style: "primary",
+							height: "sm",
+						},
+					],
+					spacing: "md",
+					margin: "md",
+				},
+				{
+					type: "button",
+					action: {
+						type: "message",
+						label: "戻る",
+						text: "サイズ選択に戻る",
+					},
+					style: "secondary",
+					margin: "md",
+				},
+			],
+			spacing: "md",
+			paddingAll: "12px",
+		},
+	};
+
+	return {
+		type: "flex",
+		altText: "数量を選択",
+		contents: container,
+	};
+};
+
+/**
+ * 配送先情報入力の案内メッセージを作成
+ */
+export const createAddressInputGuideFlex = (): FlexMessage => {
+	logger.info("配送先入力案内 Flexメッセージ作成");
+
+	const container: FlexContainer = {
+		type: "bubble",
+		header: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "配送先情報の入力",
+					weight: "bold",
+					size: "xl",
+					align: "center",
+				},
+			],
+			paddingTop: "md",
+			paddingBottom: "md",
+		},
+		body: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "これから配送先情報を入力していただきます。以下の順番で質問しますので、それぞれ回答してください。",
+					wrap: true,
+					size: "md",
+				},
+				{
+					type: "box",
+					layout: "vertical",
+					margin: "lg",
+					contents: [
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "1.",
+									size: "md",
+									flex: 1,
+								},
+								{
+									type: "text",
+									text: "お名前（受取人）",
+									size: "md",
+									flex: 9,
+								},
+							],
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "2.",
+									size: "md",
+									flex: 1,
+								},
+								{
+									type: "text",
+									text: "電話番号",
+									size: "md",
+									flex: 9,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "3.",
+									size: "md",
+									flex: 1,
+								},
+								{
+									type: "text",
+									text: "郵便番号",
+									size: "md",
+									flex: 9,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "4.",
+									size: "md",
+									flex: 1,
+								},
+								{
+									type: "text",
+									text: "都道府県",
+									size: "md",
+									flex: 9,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "5.",
+									size: "md",
+									flex: 1,
+								},
+								{
+									type: "text",
+									text: "市区町村",
+									size: "md",
+									flex: 9,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "6.",
+									size: "md",
+									flex: 1,
+								},
+								{
+									type: "text",
+									text: "番地",
+									size: "md",
+									flex: 9,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "7.",
+									size: "md",
+									flex: 1,
+								},
+								{
+									type: "text",
+									text: "建物名・部屋番号（任意）",
+									size: "md",
+									flex: 9,
+								},
+							],
+							margin: "sm",
+						},
+					],
+				},
+			],
+			paddingAll: "12px",
+		},
+		footer: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "button",
+					action: {
+						type: "message",
+						label: "入力を開始する",
+						text: "配送先の入力を開始",
+					},
+					style: "primary",
+				},
+				{
+					type: "button",
+					action: {
+						type: "message",
+						label: "キャンセル",
+						text: "キャンセル",
+					},
+					style: "secondary",
+					margin: "md",
+				},
+			],
+			paddingAll: "12px",
+		},
+	};
+
+	return {
+		type: "flex",
+		altText: "配送先情報の入力",
+		contents: container,
+	};
+};
+
+/**
+ * 注文確認用のFlexメッセージを作成
+ */
+export const createOrderConfirmationFlex = (orderData: {
+	color: string;
+	size: string;
+	quantity: number;
+	unitPrice: number;
+	totalPrice: number;
+	recipientName: string;
+	postalCode: string;
+	prefecture: string;
+	city: string;
+	streetAddress: string;
+	buildingName?: string;
+}): FlexMessage => {
+	logger.info("注文確認 Flexメッセージ作成");
+
+	// 日本語の色名を取得
+	const colorName = getColorNameJapanese(orderData.color);
+
+	const container: FlexContainer = {
+		type: "bubble",
+		header: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "注文内容の確認",
+					weight: "bold",
+					size: "xl",
+					align: "center",
+				},
+			],
+			paddingTop: "md",
+			paddingBottom: "md",
+		},
+		body: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "box",
+					layout: "vertical",
+					contents: [
+						{
+							type: "text",
+							text: "商品情報",
+							weight: "bold",
+							size: "lg",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "商品：",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: "ジブリ風オリジナルTシャツ",
+									size: "md",
+									flex: 7,
+									wrap: true,
+								},
+							],
+							margin: "md",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "カラー：",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: colorName,
+									size: "md",
+									flex: 7,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "サイズ：",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: orderData.size,
+									size: "md",
+									flex: 7,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "数量：",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: `${orderData.quantity}枚`,
+									size: "md",
+									flex: 7,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "単価：",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: `${orderData.unitPrice.toLocaleString()}円`,
+									size: "md",
+									flex: 7,
+								},
+							],
+							margin: "sm",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "合計：",
+									size: "md",
+									flex: 3,
+									weight: "bold",
+								},
+								{
+									type: "text",
+									text: `${orderData.totalPrice.toLocaleString()}円（税込）`,
+									size: "md",
+									flex: 7,
+									weight: "bold",
+								},
+							],
+							margin: "sm",
+						},
+					],
+				},
+				{
+					type: "separator",
+					margin: "lg",
+				},
+				{
+					type: "box",
+					layout: "vertical",
+					contents: [
+						{
+							type: "text",
+							text: "配送先情報",
+							weight: "bold",
+							size: "lg",
+							margin: "lg",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "名前：",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: orderData.recipientName,
+									size: "md",
+									flex: 7,
+									wrap: true,
+								},
+							],
+							margin: "md",
+						},
+						{
+							type: "box",
+							layout: "horizontal",
+							contents: [
+								{
+									type: "text",
+									text: "住所：",
+									size: "md",
+									flex: 3,
+								},
+								{
+									type: "text",
+									text: `〒${orderData.postalCode}\n${orderData.prefecture}${orderData.city}${orderData.streetAddress}${orderData.buildingName ? "\n" + orderData.buildingName : ""}`,
+									size: "md",
+									flex: 7,
+									wrap: true,
+								},
+							],
+							margin: "sm",
+						},
+					],
+				},
+			],
+			paddingAll: "12px",
+		},
+		footer: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "button",
+					action: {
+						type: "message",
+						label: "注文を確定する",
+						text: "注文を確定する",
+					},
+					style: "primary",
+				},
+				{
+					type: "button",
+					action: {
+						type: "message",
+						label: "キャンセル",
+						text: "キャンセル",
+					},
+					style: "secondary",
+					margin: "md",
+				},
+			],
+			paddingAll: "12px",
+		},
+	};
+
+	return {
+		type: "flex",
+		altText: "注文内容の確認",
+		contents: container,
+	};
+};
+
+/**
+ * 色名を日本語表記に変換
+ */
+const getColorNameJapanese = (colorCode: string): string => {
+	switch (colorCode) {
+		case "white":
+			return "ホワイト";
+		case "black":
+			return "ブラック";
+		case "navy":
+			return "ネイビー";
+		case "red":
+			return "レッド";
+		default:
+			return "ホワイト";
+	}
+};

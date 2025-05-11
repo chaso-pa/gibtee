@@ -17,9 +17,15 @@ import {
 	createTshirtPreviewFlex,
 	createColorSelectionFlex,
 } from "../services/flex-message.js";
-import { getS3SignedUrl } from "../utils/s3.js";
 import { lineClient } from "../services/line.js";
 import { generateTshirtPreview } from "@/services/image-processor.js";
+import { createOrder } from "../services/order.js";
+import {
+	createQuantitySelectionFlex,
+	createAddressInputGuideFlex,
+	createOrderConfirmationFlex,
+} from "../services/flex-message.js";
+import { getS3SignedUrl } from "@/utils/s3.js";
 
 export const handleMessage = async (event: MessageEvent): Promise<void> => {
 	const { replyToken, source, message } = event;
@@ -137,6 +143,69 @@ const handleTextMessage = async (
 				"ジブリ風に変換したい写真を送ってください！",
 			);
 			await updateUserConversationState(userId, ConversationState.WAITING);
+			break;
+
+		case ConversationState.QUANTITY_SELECTION:
+			// 数量選択の処理
+			await handleQuantitySelection(userId, text, context);
+			break;
+
+		case ConversationState.ADDRESS_INPUT:
+			// 配送先入力の開始処理
+			if (text === "配送先の入力を開始") {
+				await startAddressInput(userId, context);
+			} else if (text === "キャンセル") {
+				await sendTextMessage(
+					userId,
+					"注文をキャンセルしました。もう一度やり直す場合は、写真を送信してください。",
+				);
+				await updateUserConversationState(userId, ConversationState.WAITING);
+			} else {
+				await sendTextMessage(
+					userId,
+					"ボタンから「入力を開始する」を選択してください。",
+				);
+			}
+			break;
+
+		case ConversationState.ADDRESS_RECIPIENT_NAME:
+			// 受取人名の処理
+			await handleRecipientName(userId, text, context);
+			break;
+
+		case ConversationState.ADDRESS_PHONE:
+			// 電話番号の処理
+			await handlePhoneNumber(userId, text, context);
+			break;
+
+		case ConversationState.ADDRESS_POSTAL_CODE:
+			// 郵便番号の処理
+			await handlePostalCode(userId, text, context);
+			break;
+
+		case ConversationState.ADDRESS_PREFECTURE:
+			// 都道府県の処理
+			await handlePrefecture(userId, text, context);
+			break;
+
+		case ConversationState.ADDRESS_CITY:
+			// 市区町村の処理
+			await handleCity(userId, text, context);
+			break;
+
+		case ConversationState.ADDRESS_STREET:
+			// 番地の処理
+			await handleStreetAddress(userId, text, context);
+			break;
+
+		case ConversationState.ADDRESS_BUILDING:
+			// 建物名の処理
+			await handleBuildingName(userId, text, context);
+			break;
+
+		case ConversationState.ADDRESS_CONFIRMATION:
+			// 配送先確認の処理
+			await handleAddressConfirmation(userId, text, context);
 			break;
 
 		default:
@@ -336,11 +405,9 @@ const handleSizeSelection = async (
 		// コンテキストにサイズを保存
 		context.selectedSize = selectedSize;
 
-		// 数量選択案内メッセージ
-		await sendTextMessage(
-			userId,
-			`${selectedSize}サイズが選択されました。\n\n数量を選択してください（1〜5）：\n1枚: 3,980円\n2枚: 7,500円（460円お得）\n3枚以上: 1枚あたり3,500円`,
-		);
+		// 数量選択FlexメッセージでUI表示
+		const quantitySelectionFlex = createQuantitySelectionFlex();
+		await lineClient.pushMessage(userId, quantitySelectionFlex);
 
 		// 会話状態を数量選択に更新
 		await updateUserConversationState(
@@ -360,6 +427,7 @@ const handleSizeSelection = async (
 /**
  * 数量選択処理
  */
+// 数量選択処理関数の更新
 const handleQuantitySelection = async (
 	userId: string,
 	text: string,
@@ -371,6 +439,26 @@ const handleQuantitySelection = async (
 		// テキストから数量を抽出（数字のみ抽出）
 		const quantityMatch = text.match(/\d+/);
 		if (!quantityMatch) {
+			// 「サイズ選択に戻る」の処理
+			if (text === "サイズ選択に戻る") {
+				// 再度サイズ選択画面を表示
+				const previewImageUrl = await getS3SignedUrl(
+					context.ghibliImageKey,
+					24 * 60 * 60,
+				);
+				const tshirtPreviewFlex = createTshirtPreviewFlex(
+					previewImageUrl,
+					context.selectedColor || "white",
+				);
+				await lineClient.pushMessage(userId, tshirtPreviewFlex);
+				await updateUserConversationState(
+					userId,
+					ConversationState.SIZE_SELECTION,
+					context,
+				);
+				return;
+			}
+
 			await sendTextMessage(userId, "有効な数量を入力してください（1〜5）。");
 			return;
 		}
@@ -402,27 +490,23 @@ const handleQuantitySelection = async (
 		context.unitPrice = unitPrice;
 		context.totalPrice = totalPrice;
 
-		// 注文確認メッセージ
+		// 注文内容の確認メッセージ
 		await sendTextMessage(
 			userId,
-			`ご注文内容の確認:\n` +
-				`- デザイン: ジブリ風オリジナルTシャツ\n` +
-				`- カラー: ${getColorNameJapanese(context.selectedColor)}\n` +
-				`- サイズ: ${context.selectedSize}\n` +
-				`- 数量: ${quantity}枚\n` +
-				`- 単価: ${unitPrice.toLocaleString()}円\n` +
-				`- 合計: ${totalPrice.toLocaleString()}円（税込）\n\n` +
-				`MCPフェーズのため、ここで注文は完了します。実際のアプリでは、配送先情報の入力と決済処理が続きます。`,
+			`数量: ${quantity}枚\n` +
+				`単価: ${unitPrice.toLocaleString()}円\n` +
+				`合計: ${totalPrice.toLocaleString()}円（税込）\n\n` +
+				`次に配送先情報を入力していただきます。`,
 		);
 
-		// 会話状態を待機中に戻す（MCPフェーズでは注文処理まで実装しない）
-		await updateUserConversationState(userId, ConversationState.WAITING);
-
-		// 注文確認後の案内メッセージ
+		// 配送先入力案内を表示
 		setTimeout(async () => {
-			await sendTextMessage(
+			const addressInputFlex = createAddressInputGuideFlex();
+			await lineClient.pushMessage(userId, addressInputFlex);
+			await updateUserConversationState(
 				userId,
-				"ご注文ありがとうございます！別の写真からTシャツを作成する場合は、再度写真を送信してください。",
+				ConversationState.ADDRESS_INPUT,
+				context,
 			);
 		}, 1000);
 	} catch (error: any) {
@@ -434,20 +518,381 @@ const handleQuantitySelection = async (
 	}
 };
 
+const startAddressInput = async (
+	userId: string,
+	context: any,
+): Promise<void> => {
+	try {
+		// 受取人名の入力を促す
+		await sendTextMessage(userId, "お名前（受取人）を入力してください。");
+
+		// 会話状態を受取人名入力に更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.ADDRESS_RECIPIENT_NAME,
+			context,
+		);
+	} catch (error: any) {
+		logger.error(`配送先入力開始エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。配送先の入力を開始できませんでした。もう一度試してみてください。",
+		);
+	}
+};
+
 /**
- * 色名を日本語表記に変換
+ * 受取人名の処理
  */
-const getColorNameJapanese = (colorCode: string): string => {
-	switch (colorCode) {
-		case "white":
-			return "ホワイト";
-		case "black":
-			return "ブラック";
-		case "navy":
-			return "ネイビー";
-		case "red":
-			return "レッド";
-		default:
-			return "ホワイト";
+const handleRecipientName = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		// 入力が空でないか確認
+		if (!text || text.trim() === "") {
+			await sendTextMessage(userId, "お名前を入力してください。");
+			return;
+		}
+
+		// コンテキストに受取人名を保存
+		context.recipientName = text.trim();
+
+		// 電話番号の入力を促す
+		await sendTextMessage(
+			userId,
+			"電話番号を入力してください（ハイフンなしでも可）。",
+		);
+
+		// 会話状態を電話番号入力に更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.ADDRESS_PHONE,
+			context,
+		);
+	} catch (error: any) {
+		logger.error(`受取人名処理エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。お名前の処理に失敗しました。もう一度入力してください。",
+		);
+	}
+};
+
+/**
+ * 電話番号の処理
+ */
+const handlePhoneNumber = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		// 入力が電話番号形式か確認
+		const phoneNumberPattern = /^0\d{1,4}-?\d{1,4}-?\d{3,4}$/;
+		if (!phoneNumberPattern.test(text.trim())) {
+			await sendTextMessage(
+				userId,
+				"有効な電話番号を入力してください（例: 090-1234-5678 または 09012345678）。",
+			);
+			return;
+		}
+
+		// ハイフンを削除して標準化
+		const normalizedPhone = text.trim().replace(/-/g, "");
+
+		// コンテキストに電話番号を保存
+		context.recipientPhone = normalizedPhone;
+
+		// 郵便番号の入力を促す
+		await sendTextMessage(
+			userId,
+			"郵便番号を入力してください（例: 123-4567 または 1234567）。",
+		);
+
+		// 会話状態を郵便番号入力に更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.ADDRESS_POSTAL_CODE,
+			context,
+		);
+	} catch (error: any) {
+		logger.error(`電話番号処理エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。電話番号の処理に失敗しました。もう一度入力してください。",
+		);
+	}
+};
+
+/**
+ * 郵便番号の処理
+ */
+const handlePostalCode = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		// 入力が郵便番号形式か確認
+		const postalCodePattern = /^\d{3}-?\d{4}$/;
+		if (!postalCodePattern.test(text.trim())) {
+			await sendTextMessage(
+				userId,
+				"有効な郵便番号を入力してください（例: 123-4567 または 1234567）。",
+			);
+			return;
+		}
+
+		// ハイフンを削除して標準化
+		const normalizedPostalCode = text.trim().replace(/-/g, "");
+
+		// コンテキストに郵便番号を保存
+		context.postalCode = normalizedPostalCode;
+
+		// 都道府県の入力を促す
+		await sendTextMessage(userId, "都道府県を入力してください。");
+
+		// 会話状態を都道府県入力に更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.ADDRESS_PREFECTURE,
+			context,
+		);
+	} catch (error: any) {
+		logger.error(`郵便番号処理エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。郵便番号の処理に失敗しました。もう一度入力してください。",
+		);
+	}
+};
+
+/**
+ * 都道府県の処理
+ */
+const handlePrefecture = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		// 入力が空でないか確認
+		if (!text || text.trim() === "") {
+			await sendTextMessage(userId, "都道府県を入力してください。");
+			return;
+		}
+
+		// コンテキストに都道府県を保存
+		context.prefecture = text.trim();
+
+		// 市区町村の入力を促す
+		await sendTextMessage(userId, "市区町村を入力してください。");
+
+		// 会話状態を市区町村入力に更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.ADDRESS_CITY,
+			context,
+		);
+	} catch (error: any) {
+		logger.error(`都道府県処理エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。都道府県の処理に失敗しました。もう一度入力してください。",
+		);
+	}
+};
+
+/**
+ * 市区町村の処理
+ */
+const handleCity = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		// 入力が空でないか確認
+		if (!text || text.trim() === "") {
+			await sendTextMessage(userId, "市区町村を入力してください。");
+			return;
+		}
+
+		// コンテキストに市区町村を保存
+		context.city = text.trim();
+
+		// 番地の入力を促す
+		await sendTextMessage(userId, "番地を入力してください。");
+
+		// 会話状態を番地入力に更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.ADDRESS_STREET,
+			context,
+		);
+	} catch (error: any) {
+		logger.error(`市区町村処理エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。市区町村の処理に失敗しました。もう一度入力してください。",
+		);
+	}
+};
+
+/**
+ * 番地の処理
+ */
+const handleStreetAddress = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		// 入力が空でないか確認
+		if (!text || text.trim() === "") {
+			await sendTextMessage(userId, "番地を入力してください。");
+			return;
+		}
+
+		// コンテキストに番地を保存
+		context.streetAddress = text.trim();
+
+		// 建物名の入力を促す
+		await sendTextMessage(
+			userId,
+			"建物名・部屋番号を入力してください（なければ「なし」と入力）。",
+		);
+
+		// 会話状態を建物名入力に更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.ADDRESS_BUILDING,
+			context,
+		);
+	} catch (error: any) {
+		logger.error(`番地処理エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。番地の処理に失敗しました。もう一度入力してください。",
+		);
+	}
+};
+
+/**
+ * 建物名の処理
+ */
+const handleBuildingName = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		// 建物名をコンテキストに保存（「なし」の場合は空文字列）
+		if (text.trim() === "なし") {
+			context.buildingName = "";
+		} else {
+			context.buildingName = text.trim();
+		}
+
+		// 注文内容の確認
+		const orderData = {
+			color: context.selectedColor || "white",
+			size: context.selectedSize || "M",
+			quantity: context.quantity || 1,
+			unitPrice: context.unitPrice || 3980,
+			totalPrice: context.totalPrice || 3980,
+			recipientName: context.recipientName,
+			postalCode: context.postalCode,
+			prefecture: context.prefecture,
+			city: context.city,
+			streetAddress: context.streetAddress,
+			buildingName: context.buildingName,
+		};
+
+		// 注文確認メッセージを表示
+		const orderConfirmationFlex = createOrderConfirmationFlex(orderData);
+		await lineClient.pushMessage(userId, orderConfirmationFlex);
+
+		// 会話状態を配送先確認に更新
+		await updateUserConversationState(
+			userId,
+			ConversationState.ADDRESS_CONFIRMATION,
+			context,
+		);
+	} catch (error: any) {
+		logger.error(`建物名処理エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。建物名の処理に失敗しました。もう一度入力してください。",
+		);
+	}
+};
+
+/**
+ * 配送先確認の処理
+ */
+const handleAddressConfirmation = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		if (text === "注文を確定する") {
+			// MCPフェーズでは、実際の注文処理はシミュレーションのみ
+			// 注文レコードの作成
+			await createOrder(userId, context.imageId, {
+				size: context.selectedSize || "M",
+				color: context.selectedColor || "white",
+				quantity: context.quantity || 1,
+				unitPrice: context.unitPrice || 3980,
+				totalPrice: context.totalPrice || 3980,
+				recipientName: context.recipientName,
+				recipientPhone: context.recipientPhone,
+				postalCode: context.postalCode,
+				prefecture: context.prefecture,
+				city: context.city,
+				streetAddress: context.streetAddress,
+				buildingName: context.buildingName,
+			});
+
+			// 注文完了メッセージ
+			await sendTextMessage(
+				userId,
+				"注文が確定しました！\n\n" +
+					"MCPフェーズのため、ここで注文シミュレーションは完了します。\n" +
+					"実際のアプリでは、この後に決済処理が行われます。\n\n" +
+					"ご注文ありがとうございました！",
+			);
+
+			// 会話状態を待機中に戻す
+			await updateUserConversationState(userId, ConversationState.WAITING);
+
+			// 別の注文を促すメッセージ
+			setTimeout(async () => {
+				await sendTextMessage(
+					userId,
+					"他の写真からTシャツを作成する場合は、また写真を送信してください。",
+				);
+			}, 2000);
+		} else if (text === "キャンセル") {
+			await sendTextMessage(
+				userId,
+				"注文をキャンセルしました。もう一度やり直す場合は、写真を送信してください。",
+			);
+			await updateUserConversationState(userId, ConversationState.WAITING);
+		} else {
+			await sendTextMessage(
+				userId,
+				"ボタンから「注文を確定する」または「キャンセル」を選択してください。",
+			);
+		}
+	} catch (error: any) {
+		logger.error(`配送先確認処理エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"申し訳ありません。注文の確定に失敗しました。もう一度試してみてください。",
+		);
 	}
 };
