@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>決済完了 - gibtee</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 30px;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    .success-icon {
+      color: #27AE60;
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #333;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .order-number {
+      background: #f8f8f8;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-weight: bold;
+      color: #333;
+      display: inline-block;
+      margin: 10px 0;
+    }
+    .close-button {
+      background: #27AE60;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.3s;
+    }
+    .close-button:hover {
+      background: #219653;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success-icon">✓</div>
+    <h1>お支払いが完了しました</h1>
+    <p>ご注文いただきありがとうございます。お支払いの処理が完了しました。</p>
+    <div class="order-number">
+      注文番号: <%= orderNumber %>
+    </div>
+    <p>配送状況はLINEでお知らせします。</p>
+    <button class="close-button" onclick="window.close()">閉じる</button>
+  </div>
+</body>
+</html>

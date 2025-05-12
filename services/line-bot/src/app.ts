@@ -5,6 +5,11 @@ import { config } from "./config/index.js";
 import { logger } from "./utils/logger.js";
 import { prisma } from "./lib/prisma.js";
 import routes from "./routes/index.js";
+import {
+	stripeWebhook,
+	stripeSuccess,
+	stripeCancel,
+} from "./controllers/payment-webhook.js";
 
 // Prismaの接続テスト
 prisma
@@ -44,6 +49,17 @@ app.use(
 		});
 	},
 );
+
+// Stripe Webhook（署名検証のため、rawBodyを保持する必要がある）
+app.post(
+	"/webhook/stripe",
+	express.raw({ type: "application/json" }),
+	stripeWebhook,
+);
+
+// Stripeコールバック
+app.get("/stripe/success", stripeSuccess);
+app.get("/stripe/cancel", stripeCancel);
 
 // サーバー起動
 const PORT = config.port || 3000;

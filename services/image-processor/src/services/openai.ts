@@ -58,7 +58,7 @@ export const convertToGhibliStyle = async (
 				image: [image],
 				prompt: GHIBLI_STYLE_PROMPT,
 				n: 1,
-				size: "auto",
+				size: "1024x1024",
 			});
 
 			// レスポンスから画像URLを取得

@@ -13,10 +13,6 @@ import {
 } from "../services/conversation.js";
 import { handleImageMessage } from "../services/image.js";
 import { handleHelpCommand, handleFaqCommand } from "../services/commands.js";
-import {
-	createTshirtPreviewFlex,
-	createColorSelectionFlex,
-} from "../services/flex-message.js";
 import { lineClient } from "../services/line.js";
 import { generateTshirtPreview } from "@/services/image-processor.js";
 import { createOrder } from "../services/order.js";
@@ -24,7 +20,19 @@ import {
 	createQuantitySelectionFlex,
 	createAddressInputGuideFlex,
 	createOrderConfirmationFlex,
+	createPaymentMethodSelectionFlex,
+	createCreditCardInputFlex,
+	createPaymentCompletedFlex,
+	createTshirtPreviewFlex,
+	createColorSelectionFlex,
+	createCreditCardPaymentFlex,
 } from "../services/flex-message.js";
+import {
+	processPayment,
+	PaymentMethod,
+	getPaymentStatus,
+} from "../services/payment.js";
+
 import { getS3SignedUrl } from "@/utils/s3.js";
 
 export const handleMessage = async (event: MessageEvent): Promise<void> => {
@@ -206,6 +214,23 @@ const handleTextMessage = async (
 		case ConversationState.ADDRESS_CONFIRMATION:
 			// 配送先確認の処理
 			await handleAddressConfirmation(userId, text, context);
+			break;
+
+		// 新しい決済関連のケースを追加
+		case ConversationState.PAYMENT_METHOD_SELECTION:
+			// 決済方法選択の処理
+			await handlePaymentMethodSelection(userId, text, context);
+			break;
+
+		case ConversationState.PAYMENT_COMPLETED:
+			// 決済完了後の処理
+			if (text === "支払い完了を確認") {
+				await sendTextMessage(
+					userId,
+					"この度はご注文ありがとうございます。製品の発送準備が整い次第、また連絡いたします。",
+				);
+				await updateUserConversationState(userId, ConversationState.WAITING);
+			}
 			break;
 
 		default:
@@ -840,9 +865,8 @@ const handleAddressConfirmation = async (
 ): Promise<void> => {
 	try {
 		if (text === "注文を確定する") {
-			// MCPフェーズでは、実際の注文処理はシミュレーションのみ
-			// 注文レコードの作成
-			await createOrder(userId, context.imageId, {
+			// 注文レコード作成
+			const orderResult = await createOrder(userId, context.imageId, {
 				size: context.selectedSize || "M",
 				color: context.selectedColor || "white",
 				quantity: context.quantity || 1,
@@ -857,25 +881,23 @@ const handleAddressConfirmation = async (
 				buildingName: context.buildingName,
 			});
 
-			// 注文完了メッセージ
-			await sendTextMessage(
-				userId,
-				"注文が確定しました！\n\n" +
-					"MCPフェーズのため、ここで注文シミュレーションは完了します。\n" +
-					"実際のアプリでは、この後に決済処理が行われます。\n\n" +
-					"ご注文ありがとうございました！",
+			// コンテキストに注文情報を保存
+			context.orderId = orderResult.orderId;
+			context.orderNumber = orderResult.orderNumber;
+
+			// 決済方法選択画面を表示
+			const paymentMethodFlex = createPaymentMethodSelectionFlex(
+				orderResult.orderNumber,
+				context.totalPrice || 3980,
 			);
+			await lineClient.pushMessage(userId, paymentMethodFlex);
 
-			// 会話状態を待機中に戻す
-			await updateUserConversationState(userId, ConversationState.WAITING);
-
-			// 別の注文を促すメッセージ
-			setTimeout(async () => {
-				await sendTextMessage(
-					userId,
-					"他の写真からTシャツを作成する場合は、また写真を送信してください。",
-				);
-			}, 2000);
+			// 会話状態を決済方法選択に更新
+			await updateUserConversationState(
+				userId,
+				ConversationState.PAYMENT_METHOD_SELECTION,
+				context,
+			);
 		} else if (text === "キャンセル") {
 			await sendTextMessage(
 				userId,
@@ -893,6 +915,148 @@ const handleAddressConfirmation = async (
 		await sendTextMessage(
 			userId,
 			"申し訳ありません。注文の確定に失敗しました。もう一度試してみてください。",
+		);
+	}
+};
+
+/**
+ * 決済方法選択の処理
+ */
+const handlePaymentMethodSelection = async (
+	userId: string,
+	text: string,
+	context: any,
+): Promise<void> => {
+	try {
+		if (text === "LINE Payで支払う") {
+			await sendTextMessage(
+				userId,
+				"LINE Payでの決済を開始します。決済画面に遷移します。",
+			);
+
+			// LINE Pay決済処理
+			const paymentResult = await processPayment(
+				PaymentMethod.LINE_PAY,
+				context.orderId,
+				context.orderNumber,
+				context.totalPrice || 3980,
+				{},
+			);
+
+			if (paymentResult.success && paymentResult.paymentUrl) {
+				// LINE Payの決済URLを送信
+				await lineClient.pushMessage(userId, {
+					type: "text",
+					text: `下記のURLから決済を完了してください。\n${paymentResult.paymentUrl}`,
+				});
+
+				// 決済中状態に更新
+				await updateUserConversationState(
+					userId,
+					ConversationState.PAYMENT_PROCESSING,
+					context,
+				);
+
+				// MCPフェーズでは決済完了をシミュレート
+				setTimeout(async () => {
+					// 決済完了のFlexメッセージを送信
+					const completedFlex = createPaymentCompletedFlex(context.orderNumber);
+					await lineClient.pushMessage(userId, completedFlex);
+
+					await updateUserConversationState(
+						userId,
+						ConversationState.PAYMENT_COMPLETED,
+						context,
+					);
+				}, 5000);
+			} else {
+				await sendTextMessage(
+					userId,
+					`決済処理に失敗しました: ${paymentResult.message || "エラーが発生しました"}`,
+				);
+				// 決済方法選択に戻る
+				const paymentMethodFlex = createPaymentMethodSelectionFlex(
+					context.orderNumber,
+					context.totalPrice || 3980,
+				);
+				await lineClient.pushMessage(userId, paymentMethodFlex);
+			}
+		} else if (text === "クレジットカードで支払う") {
+			await sendTextMessage(
+				userId,
+				"クレジットカードでの決済を開始します。セキュアな決済ページを準備しています...",
+			);
+
+			// Stripe決済処理
+			const paymentResult = await processPayment(
+				PaymentMethod.CREDIT_CARD,
+				context.orderId,
+				context.orderNumber,
+				context.totalPrice || 3980,
+				{},
+			);
+
+			if (paymentResult.success && paymentResult.paymentUrl) {
+				// Stripeの決済URLを含むFlexメッセージを送信
+				const cardPaymentFlex = createCreditCardPaymentFlex(
+					context.orderNumber,
+					paymentResult.paymentUrl,
+				);
+				await lineClient.pushMessage(userId, cardPaymentFlex);
+
+				// コンテキストにセッションIDを保存
+				if (paymentResult.sessionId) {
+					context.stripeSessionId = paymentResult.sessionId;
+				}
+
+				// 決済中状態に更新
+				await updateUserConversationState(
+					userId,
+					ConversationState.PAYMENT_PROCESSING,
+					context,
+				);
+
+				// MCPフェーズでは決済完了をシミュレート
+				setTimeout(async () => {
+					// 決済完了のFlexメッセージを送信
+					const completedFlex = createPaymentCompletedFlex(context.orderNumber);
+					await lineClient.pushMessage(userId, completedFlex);
+
+					await updateUserConversationState(
+						userId,
+						ConversationState.PAYMENT_COMPLETED,
+						context,
+					);
+				}, 10000);
+			} else {
+				await sendTextMessage(
+					userId,
+					`決済処理の準備に失敗しました: ${paymentResult.message || "エラーが発生しました"}`,
+				);
+				// 決済方法選択に戻る
+				const paymentMethodFlex = createPaymentMethodSelectionFlex(
+					context.orderNumber,
+					context.totalPrice || 3980,
+				);
+				await lineClient.pushMessage(userId, paymentMethodFlex);
+			}
+		} else if (text === "支払いをキャンセル") {
+			await sendTextMessage(
+				userId,
+				"支払いをキャンセルしました。注文内容の変更が必要な場合は、もう一度写真を送信してください。",
+			);
+			await updateUserConversationState(userId, ConversationState.WAITING);
+		} else {
+			await sendTextMessage(
+				userId,
+				"「LINE Pay」または「クレジットカード」を選択してください。キャンセルする場合は「キャンセル」を選択してください。",
+			);
+		}
+	} catch (error: any) {
+		logger.error(`決済方法選択エラー: ${error.message}`);
+		await sendTextMessage(
+			userId,
+			"決済処理の開始に失敗しました。もう一度試してください。",
 		);
 	}
 };

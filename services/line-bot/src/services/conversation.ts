@@ -26,6 +26,8 @@ export enum ConversationState {
 	PAYMENT_PROCESSING = "PAYMENT_PROCESSING",
 	ORDER_COMPLETED = "ORDER_COMPLETED",
 	ORDER_STATUS = "ORDER_STATUS",
+	PAYMENT_METHOD_SELECTION = "PAYMENT_METHOD_SELECTION",
+	PAYMENT_COMPLETED = "PAYMENT_COMPLETED",
 }
 
 /**
@@ -142,5 +144,34 @@ export const saveUserConversation = async (
 		// 将来的には会話履歴もデータベースに保存する機能を実装可能
 	} catch (error: any) {
 		logger.error(`会話履歴保存エラー: ${error.message}`);
+	}
+};
+
+/**
+ * 注文IDからユーザーを取得する
+ */
+export const getUserByOrderId = async (
+	orderId: number,
+): Promise<{
+	id: number;
+	lineUserId: string;
+} | null> => {
+	try {
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+			include: { user: true },
+		});
+
+		if (!order) {
+			return null;
+		}
+
+		return {
+			id: order.user.id,
+			lineUserId: order.user.lineUserId,
+		};
+	} catch (error: any) {
+		logger.error(`注文IDからユーザーの取得に失敗: ${error.message}`);
+		return null;
 	}
 };

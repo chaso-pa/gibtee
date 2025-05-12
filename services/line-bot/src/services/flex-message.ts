@@ -1112,6 +1112,317 @@ export const createOrderConfirmationFlex = (orderData: {
 };
 
 /**
+ * 決済方法選択用のFlexメッセージを作成
+ */
+export const createPaymentMethodSelectionFlex = (
+	orderNumber: string,
+	totalAmount: number,
+): FlexMessage => {
+	logger.info("決済方法選択 Flexメッセージ作成");
+
+	const container: FlexContainer = {
+		type: "bubble",
+		header: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "お支払い方法選択",
+					weight: "bold",
+					size: "xl",
+					align: "center",
+				},
+			],
+			paddingTop: "md",
+			paddingBottom: "md",
+		},
+		body: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: `注文番号: ${orderNumber}`,
+					size: "sm",
+					color: "#555555",
+				},
+				{
+					type: "text",
+					text: `お支払い金額: ${totalAmount.toLocaleString()}円（税込）`,
+					size: "md",
+					weight: "bold",
+					margin: "md",
+				},
+				{
+					type: "text",
+					text: "お支払い方法を選択してください",
+					size: "md",
+					margin: "lg",
+				},
+				{
+					type: "separator",
+					margin: "lg",
+				},
+				{
+					type: "box",
+					layout: "vertical",
+					margin: "lg",
+					contents: [
+						{
+							type: "button",
+							action: {
+								type: "message",
+								label: "LINE Pay",
+								text: "LINE Payで支払う",
+							},
+							style: "primary",
+							color: "#00C300",
+						},
+						{
+							type: "button",
+							action: {
+								type: "message",
+								label: "クレジットカード",
+								text: "クレジットカードで支払う",
+							},
+							style: "primary",
+							color: "#4169E1",
+							margin: "md",
+						},
+					],
+				},
+			],
+			paddingAll: "12px",
+		},
+		footer: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "button",
+					action: {
+						type: "message",
+						label: "キャンセル",
+						text: "支払いをキャンセル",
+					},
+					style: "secondary",
+				},
+			],
+			paddingAll: "12px",
+		},
+		styles: {
+			header: {
+				backgroundColor: "#f0f0f0",
+			},
+		},
+	};
+
+	return {
+		type: "flex",
+		altText: "お支払い方法の選択",
+		contents: container,
+	};
+};
+
+/**
+ * クレジットカード決済（Stripe利用）のFlexメッセージを作成
+ */
+export const createCreditCardPaymentFlex = (
+	orderNumber: string,
+	stripeUrl: string,
+): FlexMessage => {
+	logger.info("クレジットカード決済 Flexメッセージ作成");
+
+	const container: FlexContainer = {
+		type: "bubble",
+		header: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "クレジットカード決済",
+					weight: "bold",
+					size: "xl",
+					align: "center",
+				},
+			],
+			paddingTop: "md",
+			paddingBottom: "md",
+		},
+		body: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: `注文番号: ${orderNumber}`,
+					size: "sm",
+					color: "#555555",
+				},
+				{
+					type: "text",
+					text: "安全な決済ページでお支払いを完了してください",
+					margin: "md",
+					size: "md",
+					wrap: true,
+				},
+				{
+					type: "text",
+					text: "下記のリンクをタップして、セキュアな決済ページに移動します。",
+					margin: "md",
+					size: "sm",
+					wrap: true,
+				},
+				{
+					type: "box",
+					layout: "vertical",
+					margin: "xl",
+					contents: [
+						{
+							type: "button",
+							action: {
+								type: "uri",
+								label: "決済ページへ進む",
+								uri: stripeUrl,
+							},
+							style: "primary",
+							color: "#3381ff",
+						},
+					],
+				},
+				{
+					type: "text",
+					text: "※決済は安全なStripeのシステムを使用しています。カード情報はgibteeには保存されません。",
+					margin: "xl",
+					size: "xs",
+					color: "#555555",
+					wrap: true,
+				},
+			],
+			paddingAll: "12px",
+		},
+		footer: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "button",
+					action: {
+						type: "message",
+						label: "支払い方法を変更",
+						text: "支払い方法選択に戻る",
+					},
+					style: "secondary",
+				},
+			],
+			paddingAll: "12px",
+		},
+	};
+
+	return {
+		type: "flex",
+		altText: "クレジットカード決済",
+		contents: container,
+	};
+};
+
+/**
+ * 決済完了メッセージを作成
+ */
+export const createPaymentCompletedFlex = (
+	orderNumber: string,
+): FlexMessage => {
+	logger.info("決済完了 Flexメッセージ作成");
+
+	const container: FlexContainer = {
+		type: "bubble",
+		header: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "お支払い完了",
+					weight: "bold",
+					size: "xl",
+					align: "center",
+					color: "#FFFFFF",
+				},
+			],
+			paddingTop: "md",
+			paddingBottom: "md",
+			backgroundColor: "#27AE60",
+		},
+		body: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "text",
+					text: "ご注文ありがとうございます！",
+					size: "md",
+					weight: "bold",
+					align: "center",
+				},
+				{
+					type: "text",
+					text: `注文番号：${orderNumber}`,
+					margin: "md",
+					size: "md",
+					align: "center",
+				},
+				{
+					type: "text",
+					text: "お支払いが完了しました。",
+					margin: "md",
+					size: "md",
+					align: "center",
+				},
+				{
+					type: "text",
+					text: "商品の準備が整い次第発送いたします。",
+					margin: "lg",
+					wrap: true,
+					size: "md",
+				},
+				{
+					type: "text",
+					text: "発送時には、LINEでお知らせします。",
+					margin: "md",
+					wrap: true,
+					size: "md",
+				},
+			],
+			paddingAll: "12px",
+		},
+		footer: {
+			type: "box",
+			layout: "vertical",
+			contents: [
+				{
+					type: "button",
+					action: {
+						type: "message",
+						label: "OK",
+						text: "支払い完了を確認",
+					},
+					style: "primary",
+				},
+			],
+			paddingAll: "12px",
+		},
+	};
+
+	return {
+		type: "flex",
+		altText: "お支払い完了",
+		contents: container,
+	};
+};
+
+/**
  * 色名を日本語表記に変換
  */
 const getColorNameJapanese = (colorCode: string): string => {
