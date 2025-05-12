@@ -1,6 +1,9 @@
 {
   "name": "@gibtee/prisma",
   "version": "1.0.0",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "type": "module",
   "main": "index.js",
   "license": "MIT",
@@ -8,7 +11,9 @@
     "@prisma/client": "^6.7.0"
   },
   "devDependencies": {
+    "@types/node": "^22.15.17",
     "prisma": "^6.7.0",
+    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
 }

@@ -68,9 +68,48 @@ model Order {
   streetAddress  String? @map("street_address")
   buildingName   String? @map("building_name")
 
-  // 支払い情報
-  paymentId     String?        @map("payment_id")
-  paymentMethod PaymentMethod? @map("payment_method")
+  // 配送関連のフィールド
+  shippingStatus      String? // "preparing", "shipped", "delivered" など
+  shippingCarrier     String? // 配送業者
+  trackingNumber      String? // 追跡番号
+  shippedAt           DateTime? // 発送日時
+  estimatedDeliveryAt DateTime? // 配送予定日時
+  deliveredAt         DateTime? // 配送完了日時
+
+  // 管理・運用関連のフィールド
+  adminMemo        String? // 管理者用メモ
+  isHighPriority   Boolean @default(false) // 優先度の高い注文
+  hasPrintingIssue Boolean @default(false) // 印刷上の問題がある
+
+  // キャンセル・返品関連
+  isCancelled        Boolean   @default(false)
+  cancelledAt        DateTime? // キャンセル日時
+  cancellationReason String? // キャンセル理由
+  isRefunded         Boolean   @default(false) // 返金済みか
+  refundedAt         DateTime? // 返金日時
+
+  // 通知関連
+  notifiedShipping Boolean @default(false) // 発送通知済み
+  notifiedDelivery Boolean @default(false) // 配送完了通知済み
+
+  // 印刷・製造関連
+  printStatus String? // "waiting", "printing", "printed", "failed" など
+  printedAt   DateTime? // 印刷完了日時
+
+  // 価格詳細（税金、送料など）
+  basePrice      Int // 基本価格
+  taxAmount      Int // 税額
+  shippingFee    Int // 送料
+  discountAmount Int? // 割引額
+
+  // 関連モデル
+  paymentId      Int?
+  payments       Payment[] // 複数の支払い試行を記録
+  orderHistories OrderHistory[]
+
+  // レビュー関連
+  hasReviewed Boolean @default(false)
+  reviewId    Int?
 
   // その他
   notes     String?
@@ -78,14 +117,40 @@ model Order {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // リレーション
-  user     User      @relation(fields: [userId], references: [id])
-  image    Image     @relation(fields: [imageId], references: [id])
-  payments Payment[]
+  user  User  @relation(fields: [userId], references: [id])
+  image Image @relation(fields: [imageId], references: [id])
 
   @@index([orderNumber])
   @@index([status])
   @@index([userId])
   @@map("orders")
+}
+
+// 注文履歴の追跡
+model OrderHistory {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id])
+  status    String // 変更後のステータス
+  message   String // 変更内容の説明
+  createdBy String // 変更者（システム or 管理者のID/名前）
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_histories")
+}
+
+// 在庫管理用のモデル
+model Inventory {
+  id        Int      @id @default(autoincrement())
+  itemType  String // "t-shirt"
+  itemColor String // "white", "black", etc.
+  itemSize  String // "S", "M", "L", etc.
+  quantity  Int // 在庫数
+  updatedAt DateTime @updatedAt
+
+  @@unique([itemType, itemColor, itemSize])
+  @@map("inventories")
 }
 
 model Conversation {
@@ -120,6 +185,7 @@ model Payment {
 
   @@index([orderId])
   @@index([transactionId])
+  @@map("payments")
 }
 
 // Tシャツカラーの定義
