@@ -17,6 +17,7 @@ import {
 	FiSettings,
 	FiBarChart2,
 	FiUsers,
+	FiBell,
 } from "react-icons/fi";
 import type { IconType } from "react-icons";
 import { config } from "../../config";
@@ -34,6 +35,7 @@ interface LinkItemProps {
 const LinkItems: Array<LinkItemProps> = [
 	{ name: "ダッシュボード", icon: FiHome, to: "/dashboard" },
 	{ name: "注文管理", icon: FiShoppingBag, to: "/orders" },
+	{ name: "通知ログ", icon: FiBell, to: "/notifications" },
 	{ name: "在庫管理", icon: FiBox, to: "/inventory" },
 	{ name: "ユーザー管理", icon: FiUsers, to: "/users" },
 	{ name: "レポート", icon: FiBarChart2, to: "/reports" },
