@@ -12,12 +12,16 @@ import {
 	stripeCancel,
 } from "./controllers/payment-webhook.js";
 import authRoutes from "./routes/auth.js";
+import { notifyError } from "./services/slack-notification.ts";
 
 // Prismaの接続テスト
 prisma
 	.$connect()
 	.then(() => logger.info("Prismaがデータベースに接続しました"))
-	.catch((e) => logger.error(`Prisma接続エラー: ${e.message}`));
+	.catch((e) => {
+		logger.error(`Prisma接続エラー: ${e.message}`);
+		notifyError("データベース接続エラー", e.message, { stack: e.stack });
+	});
 
 const app = express();
 
@@ -50,6 +54,21 @@ app.use(
 		next: express.NextFunction,
 	) => {
 		logger.error(`Error: ${err.message}`);
+		
+		// 重大なエラーの場合はSlackに通知
+		if (err.status >= 500 || !err.status) {
+			notifyError(
+				"サーバーエラー",
+				err.message,
+				{
+					stack: err.stack,
+					path: req.path,
+					method: req.method,
+					ip: req.ip,
+				}
+			);
+		}
+		
 		res.status(err.status || 500).json({
 			message: err.message || "サーバーエラーが発生しました",
 		});
