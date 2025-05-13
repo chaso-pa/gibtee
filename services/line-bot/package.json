@@ -25,7 +25,8 @@
     "mime-types": "^3.0.1",
     "stripe": "^18.1.0",
     "uuid": "^11.1.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
@@ -36,6 +37,8 @@
     "prisma": "^6.7.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.5"
   }
 }

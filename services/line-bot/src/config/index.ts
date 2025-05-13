@@ -27,6 +27,12 @@ export const config = {
 			"mysql://username:password@localhost:3306/gibtee",
 	},
 
+	// JWT認証設定
+	jwt: {
+		secret: process.env.JWT_SECRET || "gibtee-secret-key",
+		expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+	},
+
 	// AWS設定
 	aws: {
 		region: process.env.AWS_REGION || "ap-southeast-1",

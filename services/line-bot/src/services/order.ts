@@ -60,6 +60,9 @@ export const createOrder = async (
 				city: orderData.city,
 				streetAddress: orderData.streetAddress,
 				buildingName: orderData.buildingName,
+				basePrice: orderData.unitPrice,
+				taxAmount: Math.floor(orderData.totalPrice * 0.1), // 消費税10%として計算
+				shippingFee: 770, // 送料一律770円として設定
 			},
 		});
 

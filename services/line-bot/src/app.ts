@@ -5,11 +5,13 @@ import { config } from "./config/index.js";
 import { logger } from "./utils/logger.js";
 import { prisma } from "./lib/prisma.js";
 import routes from "./routes/index.js";
+import apiRoutes from "./routes/api.js";
 import {
 	stripeWebhook,
 	stripeSuccess,
 	stripeCancel,
 } from "./controllers/payment-webhook.js";
+import authRoutes from "./routes/auth.js";
 
 // Prismaの接続テスト
 prisma
@@ -34,6 +36,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // ルーティング
 app.use("/", routes);
+
+// API ルート（管理画面向け）
+app.use("/auth", authRoutes);
+app.use("/api", apiRoutes);
 
 // エラーハンドリング
 app.use(
