@@ -7,7 +7,7 @@ import {
 	type ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import type { User, LoginCredentials, ApiError } from "../types";
+import type { User, LoginCredentials } from "../types";
 import { api } from "../lib/api";
 
 interface AuthContextType {
