@@ -4,7 +4,10 @@ import {
 	OrderStatus,
 	ShirtSize,
 	ShirtColor,
+	NotificationType,
 } from "@prisma/client";
+import { logger } from "../utils/logger.js";
+import { sendOrderStatusNotification, sendShippingNotification } from "../services/notification.ts";
 
 const prisma = new PrismaClient();
 
@@ -30,7 +33,7 @@ export const getOrders = async (req: Request, res: Response) => {
 		const skip = (Number(page) - 1) * Number(limit);
 		const take = Number(limit);
 
-		// フィルター条件の構築
+		// フィルタ条件の構築
 		let where: any = {};
 
 		// ステータスフィルター
@@ -73,7 +76,7 @@ export const getOrders = async (req: Request, res: Response) => {
 			};
 		}
 
-		// 検索フィルター（注文番号、受取人名、電話番号など）
+		// 検索フィルター（注文番号、受取人名、電話番号、郵便番号など）
 		if (search) {
 			where.OR = [
 				{ orderNumber: { contains: search as string } },
@@ -87,7 +90,7 @@ export const getOrders = async (req: Request, res: Response) => {
 		const orderBy: any = {};
 		orderBy[sortBy as string] = sortOrder;
 
-		// 注文一覧の取得（件数も併せて取得）
+		// 注文一覧の取得（総数も一緒に取得）
 		const [orders, total] = await Promise.all([
 			prisma.order.findMany({
 				where,
@@ -162,6 +165,9 @@ export const getOrderById = async (req: Request, res: Response) => {
 				orderHistories: {
 					orderBy: { createdAt: "desc" },
 				},
+				notifications: {
+					orderBy: { createdAt: "desc" },
+				},
 			},
 		});
 
@@ -180,7 +186,7 @@ export const getOrderById = async (req: Request, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
-		const { status, adminMemo } = req.body;
+		const { status, adminMemo, notifyCustomer } = req.body;
 
 		// ステータスの型チェック
 		if (status && !Object.values(OrderStatus).includes(status as OrderStatus)) {
@@ -190,6 +196,13 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 		// 注文の存在確認
 		const order = await prisma.order.findUnique({
 			where: { id: Number(id) },
+			include: {
+				user: {
+					select: {
+						lineUserId: true
+					}
+				}
+			}
 		});
 
 		if (!order) {
@@ -208,7 +221,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 			});
 
 			// 注文履歴の追加
-			await tx.orderHistory.create({
+			const history = await tx.orderHistory.create({
 				data: {
 					orderId: updatedOrder.id,
 					status: status as OrderStatus,
@@ -216,13 +229,73 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 					createdBy: req.user?.userId.toString() || "system",
 				},
 			});
+			
+			// 顧客通知が有効な場合
+			let notification = null;
+			if (notifyCustomer && order.user?.lineUserId) {
+				// 通知レコードを作成
+				notification = await tx.notification.create({
+					data: {
+						orderId: updatedOrder.id,
+						type: NotificationType.STATUS_UPDATE,
+						content: JSON.stringify({
+							status: status,
+							message: `ご注文 #${order.orderNumber} のステータスが「${status}」に更新されました。`,
+						}),
+						sentAt: new Date(),
+						success: true, // 通知送信前に作成し、後で更新
+					},
+				});
+				
+				// ログ記録
+				logger.info(`注文ステータス通知送信準備: OrderID=${order.id}, Status=${status}, NotificationID=${notification.id}`);
+			}
 
-			return updatedOrder;
+			return { updatedOrder, history, notification, lineUserId: order.user?.lineUserId };
 		});
+
+		// トランザクション外でLINE通知を送信（DB更新後に非同期で実行）
+		if (result.notification && notifyCustomer && result.lineUserId) {
+			try {
+				await sendOrderStatusNotification(
+					result.lineUserId,
+					order.orderNumber,
+					status as OrderStatus
+				);
+				
+				// 通知成功ログ
+				logger.info(`注文ステータス通知送信成功: OrderID=${order.id}, NotificationID=${result.notification.id}`);
+				
+				// 通知成功フラグを更新
+				await prisma.notification.update({
+					where: { id: result.notification.id },
+					data: { success: true }
+				});
+				
+				// 注文の通知ステータスフラグを更新
+				await prisma.order.update({
+					where: { id: Number(id) },
+					data: { notifiedStatus: true }
+				});
+			} catch (error) {
+				// 通知失敗ログ
+				logger.error(`注文ステータス通知送信失敗: OrderID=${order.id}, NotificationID=${result.notification.id}, Error=${error.message}`);
+				
+				// 通知失敗フラグを更新
+				await prisma.notification.update({
+					where: { id: result.notification.id },
+					data: { 
+						success: false,
+						errorMessage: error.message
+					}
+				});
+			}
+		}
 
 		return res.status(200).json({
 			message: "注文ステータスを更新しました",
-			order: result,
+			order: result.updatedOrder,
+			notified: notifyCustomer && result.lineUserId ? true : false
 		});
 	} catch (error) {
 		console.error("注文ステータス更新エラー:", error);
@@ -230,12 +303,17 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 	}
 };
 
-// 発送情報を更新するコントローラー
+// 配送情報を更新するコントローラー
 export const updateOrderShipping = async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
-		const { shippingCarrier, trackingNumber, shippedAt, estimatedDeliveryAt } =
-			req.body;
+		const { 
+			shippingCarrier, 
+			trackingNumber, 
+			shippedAt, 
+			estimatedDeliveryAt,
+			notifyCustomer
+		} = req.body;
 
 		// 必須フィールドのチェック
 		if (!shippingCarrier || !trackingNumber) {
@@ -245,6 +323,13 @@ export const updateOrderShipping = async (req: Request, res: Response) => {
 		// 注文の存在確認
 		const order = await prisma.order.findUnique({
 			where: { id: Number(id) },
+			include: {
+				user: {
+					select: {
+						lineUserId: true
+					}
+				}
+			}
 		});
 
 		if (!order) {
@@ -253,7 +338,7 @@ export const updateOrderShipping = async (req: Request, res: Response) => {
 
 		// トランザクションで注文更新と履歴追加を実行
 		const result = await prisma.$transaction(async (tx) => {
-			// 発送情報の更新
+			// 配送情報の更新
 			const updatedOrder = await tx.order.update({
 				where: { id: Number(id) },
 				data: {
@@ -263,30 +348,123 @@ export const updateOrderShipping = async (req: Request, res: Response) => {
 					...(estimatedDeliveryAt && {
 						estimatedDeliveryAt: new Date(estimatedDeliveryAt),
 					}),
-					status: OrderStatus.shipped, // 発送情報が更新されたので、ステータスも「発送済み」に更新
-					notifiedShipping: false, // 発送通知フラグをリセット（後で通知処理で使用）
+					status: OrderStatus.shipped, // 配送情報が更新されたので、ステータスも「発送完了」に更新
+					notifiedShipping: false, // 配送通知フラグをリセット（後で通知処理で更新）
 				},
 			});
 
 			// 注文履歴の追加
-			await tx.orderHistory.create({
+			const history = await tx.orderHistory.create({
 				data: {
 					orderId: updatedOrder.id,
 					status: OrderStatus.shipped,
-					message: `発送情報を更新しました: ${shippingCarrier}, 追跡番号: ${trackingNumber}`,
+					message: `配送情報を更新しました: ${shippingCarrier}, 追跡番号: ${trackingNumber}`,
 					createdBy: req.user?.userId.toString() || "system",
 				},
 			});
+			
+			// 顧客通知が有効な場合
+			let notification = null;
+			if (notifyCustomer && order.user?.lineUserId) {
+				// 通知レコードを作成
+				notification = await tx.notification.create({
+					data: {
+						orderId: updatedOrder.id,
+						type: NotificationType.SHIPPING_UPDATE,
+						content: JSON.stringify({
+							shippingCarrier,
+							trackingNumber,
+							shippedAt,
+							estimatedDeliveryAt,
+							message: `ご注文 #${order.orderNumber} が発送されました。配送業者: ${shippingCarrier}, 追跡番号: ${trackingNumber}`,
+						}),
+						sentAt: new Date(),
+						success: true, // 通知送信前に作成し、後で更新
+					},
+				});
+				
+				// ログ記録
+				logger.info(`配送情報通知送信準備: OrderID=${order.id}, Carrier=${shippingCarrier}, NotificationID=${notification.id}`);
+			}
 
-			return updatedOrder;
+			return { updatedOrder, history, notification, lineUserId: order.user?.lineUserId };
 		});
+
+		// トランザクション外でLINE通知を送信（DB更新後に非同期で実行）
+		if (result.notification && notifyCustomer && result.lineUserId) {
+			try {
+				await sendShippingNotification(
+					result.lineUserId,
+					order.orderNumber,
+					shippingCarrier,
+					trackingNumber,
+					shippedAt ? new Date(shippedAt) : new Date(),
+					estimatedDeliveryAt ? new Date(estimatedDeliveryAt) : null
+				);
+				
+				// 通知成功ログ
+				logger.info(`配送情報通知送信成功: OrderID=${order.id}, NotificationID=${result.notification.id}`);
+				
+				// 通知成功フラグを更新
+				await prisma.notification.update({
+					where: { id: result.notification.id },
+					data: { success: true }
+				});
+				
+				// 注文の配送通知ステータスフラグを更新
+				await prisma.order.update({
+					where: { id: Number(id) },
+					data: { notifiedShipping: true }
+				});
+			} catch (error) {
+				// 通知失敗ログ
+				logger.error(`配送情報通知送信失敗: OrderID=${order.id}, NotificationID=${result.notification.id}, Error=${error.message}`);
+				
+				// 通知失敗フラグを更新
+				await prisma.notification.update({
+					where: { id: result.notification.id },
+					data: { 
+						success: false,
+						errorMessage: error.message
+					}
+				});
+			}
+		}
 
 		return res.status(200).json({
-			message: "発送情報を更新しました",
-			order: result,
+			message: "配送情報を更新しました",
+			order: result.updatedOrder,
+			notified: notifyCustomer && result.lineUserId ? true : false
 		});
 	} catch (error) {
-		console.error("発送情報更新エラー:", error);
+		console.error("配送情報更新エラー:", error);
+		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+	}
+};
+
+// 注文通知履歴を取得するコントローラー
+export const getOrderNotifications = async (req: Request, res: Response) => {
+	try {
+		const { id } = req.params;
+		
+		// 注文の存在確認
+		const order = await prisma.order.findUnique({
+			where: { id: Number(id) },
+		});
+
+		if (!order) {
+			return res.status(404).json({ message: "注文が見つかりません" });
+		}
+		
+		// 通知履歴を取得
+		const notifications = await prisma.notification.findMany({
+			where: { orderId: Number(id) },
+			orderBy: { createdAt: "desc" },
+		});
+		
+		return res.status(200).json({ notifications });
+	} catch (error) {
+		console.error("通知履歴取得エラー:", error);
 		return res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };
