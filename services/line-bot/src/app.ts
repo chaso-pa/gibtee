@@ -12,7 +12,7 @@ import {
 	stripeCancel,
 } from "./controllers/payment-webhook.js";
 import authRoutes from "./routes/auth.js";
-import { notifyError } from "./services/slack-notification.ts";
+import { notifyError } from "./services/slack-notification.js";
 
 // Prismaの接続テスト
 prisma
@@ -54,21 +54,17 @@ app.use(
 		next: express.NextFunction,
 	) => {
 		logger.error(`Error: ${err.message}`);
-		
+
 		// 重大なエラーの場合はSlackに通知
 		if (err.status >= 500 || !err.status) {
-			notifyError(
-				"サーバーエラー",
-				err.message,
-				{
-					stack: err.stack,
-					path: req.path,
-					method: req.method,
-					ip: req.ip,
-				}
-			);
+			notifyError("サーバーエラー", err.message, {
+				stack: err.stack,
+				path: req.path,
+				method: req.method,
+				ip: req.ip,
+			});
 		}
-		
+
 		res.status(err.status || 500).json({
 			message: err.message || "サーバーエラーが発生しました",
 		});

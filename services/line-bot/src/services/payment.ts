@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import Stripe from "stripe";
 import { prisma } from "../lib/prisma.js";
 import { logger } from "../utils/logger.js";
-import { notifyPaymentComplete } from "./slack-notification.ts";
+import { notifyPaymentComplete } from "./slack-notification.js";
 
 // 環境変数から設定を読み込む
 const LINE_PAY_CHANNEL_ID = process.env.LINE_PAY_CHANNEL_ID || "";
@@ -170,8 +170,8 @@ export const confirmLinePayPayment = async (
 			const payment = await prisma.payment.findFirst({
 				where: { transactionId },
 				include: {
-					order: true
-				}
+					order: true,
+				},
 			});
 
 			if (!payment) {
@@ -193,7 +193,7 @@ export const confirmLinePayPayment = async (
 			await notifyPaymentComplete(
 				payment.order.orderNumber,
 				PaymentMethod.LINE_PAY,
-				amount
+				amount,
 			);
 
 			logger.info(`LINE Pay決済確定処理成功: transactionId=${transactionId}`);
@@ -320,7 +320,7 @@ export const checkStripeSessionStatus = async (
 			await notifyPaymentComplete(
 				payment.order.orderNumber,
 				PaymentMethod.CREDIT_CARD,
-				payment.amount
+				payment.amount,
 			);
 
 			logger.info(`Stripe決済完了: sessionId=${sessionId}`);
@@ -380,8 +380,8 @@ export const handleStripeWebhook = async (
 			const payment = await prisma.payment.findFirst({
 				where: { transactionId: session.id },
 				include: {
-					order: true
-				}
+					order: true,
+				},
 			});
 
 			if (payment) {
@@ -400,7 +400,7 @@ export const handleStripeWebhook = async (
 				await notifyPaymentComplete(
 					payment.order.orderNumber,
 					PaymentMethod.CREDIT_CARD,
-					payment.amount
+					payment.amount,
 				);
 
 				logger.info(`Webhook: 決済完了処理成功 sessionId=${session.id}`);
