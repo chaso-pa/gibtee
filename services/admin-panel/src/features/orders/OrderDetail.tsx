@@ -41,6 +41,8 @@ import {
 	AlertIcon,
 	AlertTitle,
 	AlertDescription,
+	Switch,
+	Tooltip,
 } from "@chakra-ui/react";
 import {
 	ArrowBackIcon,
@@ -49,6 +51,8 @@ import {
 	WarningIcon,
 	StarIcon,
 	ExternalLinkIcon,
+	BellIcon,
+	InfoIcon,
 } from "@chakra-ui/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
@@ -73,33 +77,38 @@ const updateOrderStatus = async ({
 	orderId,
 	status,
 	adminMemo,
-}: { orderId: string; status: OrderStatus; adminMemo?: string }) => {
+	notifyCustomer,
+}: { orderId: string; status: OrderStatus; adminMemo?: string; notifyCustomer: boolean }) => {
 	const { data } = await api.patch(`/api/orders/${orderId}/status`, {
 		status,
 		adminMemo,
+		notifyCustomer,
 	});
 	return data;
 };
 
-// 発送情報更新API関数
+// 配送情報更新API関数
 const updateShippingInfo = async ({
 	orderId,
 	shippingCarrier,
 	trackingNumber,
 	shippedAt,
 	estimatedDeliveryAt,
+	notifyCustomer,
 }: {
 	orderId: string;
 	shippingCarrier: string;
 	trackingNumber: string;
 	shippedAt: string;
 	estimatedDeliveryAt?: string;
+	notifyCustomer: boolean;
 }) => {
 	const { data } = await api.patch(`/api/orders/${orderId}/shipping`, {
 		shippingCarrier,
 		trackingNumber,
 		shippedAt,
 		estimatedDeliveryAt,
+		notifyCustomer,
 	});
 	return data;
 };
@@ -155,6 +164,7 @@ export const OrderDetail: React.FC = () => {
 	const [statusForm, setStatusForm] = useState({
 		status: "",
 		adminMemo: "",
+		notifyCustomer: true,
 	});
 
 	const [shippingForm, setShippingForm] = useState({
@@ -162,6 +172,7 @@ export const OrderDetail: React.FC = () => {
 		trackingNumber: "",
 		shippedAt: "",
 		estimatedDeliveryAt: "",
+		notifyCustomer: true,
 	});
 
 	// 注文詳細データを取得
@@ -200,12 +211,12 @@ export const OrderDetail: React.FC = () => {
 		},
 	});
 
-	// 発送情報更新ミューテーション
+	// 配送情報更新ミューテーション
 	const updateShippingMutation = useMutation({
 		mutationFn: updateShippingInfo,
 		onSuccess: () => {
 			toast({
-				title: "発送情報を更新しました",
+				title: "配送情報を更新しました",
 				status: "success",
 				duration: 3000,
 				isClosable: true,
@@ -215,7 +226,7 @@ export const OrderDetail: React.FC = () => {
 		},
 		onError: (error: any) => {
 			toast({
-				title: "発送情報の更新に失敗しました",
+				title: "配送情報の更新に失敗しました",
 				description: error.response?.data?.message || "エラーが発生しました",
 				status: "error",
 				duration: 5000,
@@ -230,12 +241,13 @@ export const OrderDetail: React.FC = () => {
 			setStatusForm({
 				status: order.status,
 				adminMemo: order.adminMemo || "",
+				notifyCustomer: true,
 			});
 			onStatusModalOpen();
 		}
 	};
 
-	// 発送情報モーダルを開く
+	// 配送情報モーダルを開く
 	const handleOpenShippingModal = () => {
 		if (order) {
 			setShippingForm({
@@ -247,6 +259,7 @@ export const OrderDetail: React.FC = () => {
 				estimatedDeliveryAt: order.estimatedDeliveryAt
 					? new Date(order.estimatedDeliveryAt).toISOString().split("T")[0]
 					: "",
+				notifyCustomer: true,
 			});
 			onShippingModalOpen();
 		}
@@ -260,11 +273,12 @@ export const OrderDetail: React.FC = () => {
 				orderId,
 				status: statusForm.status as OrderStatus,
 				adminMemo: statusForm.adminMemo,
+				notifyCustomer: statusForm.notifyCustomer,
 			});
 		}
 	};
 
-	// 発送情報更新を実行
+	// 配送情報更新を実行
 	const handleUpdateShipping = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (orderId) {
@@ -370,12 +384,12 @@ export const OrderDetail: React.FC = () => {
 										{order.shirtColor === "white"
 											? "白"
 											: order.shirtColor === "black"
-												? "黒"
-												: order.shirtColor === "navy"
-													? "紺"
-													: order.shirtColor === "red"
-														? "赤"
-														: order.shirtColor}
+											? "黒"
+											: order.shirtColor === "navy"
+											? "紺"
+											: order.shirtColor === "red"
+											? "赤"
+											: order.shirtColor}
 									</Text>
 								</Box>
 								<Box>
@@ -386,7 +400,7 @@ export const OrderDetail: React.FC = () => {
 								</Box>
 								<Box>
 									<Text fontWeight="bold" fontSize="sm">
-										合計金額
+										決済金額
 									</Text>
 									<Text>{formatPrice(Number(order.price))}</Text>
 								</Box>
@@ -466,10 +480,10 @@ export const OrderDetail: React.FC = () => {
 						</CardBody>
 					</Card>
 
-					{/* 発送情報 */}
+					{/* 配送情報 */}
 					<Card mb={5}>
 						<CardHeader>
-							<Heading size="md">発送情報</Heading>
+							<Heading size="md">配送情報</Heading>
 						</CardHeader>
 						<CardBody>
 							<SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
@@ -509,12 +523,12 @@ export const OrderDetail: React.FC = () => {
 								</Box>
 								<Box>
 									<Text fontWeight="bold" fontSize="sm">
-										発送日
+										配送日
 									</Text>
 									<Text color={order.shippedAt ? "black" : "gray.500"}>
 										{order.shippedAt
 											? formatDate(new Date(order.shippedAt))
-											: "未発送"}
+											: "未配送"}
 									</Text>
 								</Box>
 								<Box>
@@ -529,6 +543,19 @@ export const OrderDetail: React.FC = () => {
 											: "未設定"}
 									</Text>
 								</Box>
+								<Box>
+									<Text fontWeight="bold" fontSize="sm">
+										顧客通知状態
+									</Text>
+									<HStack>
+										<Badge colorScheme={order.notifiedShipping ? "green" : "gray"}>
+											{order.notifiedShipping ? "配送通知済み" : "未通知"}
+										</Badge>
+										<Tooltip label="配送情報をLINEに通知済みかどうかを示します">  
+											<InfoIcon color="gray.500" />
+										</Tooltip>
+									</HStack>
+								</Box>
 							</SimpleGrid>
 
 							<Button
@@ -538,7 +565,7 @@ export const OrderDetail: React.FC = () => {
 								size="sm"
 								onClick={handleOpenShippingModal}
 							>
-								発送情報更新
+								配送情報更新
 							</Button>
 						</CardBody>
 					</Card>
@@ -595,8 +622,8 @@ export const OrderDetail: React.FC = () => {
 													{payment.method === "LINE_PAY"
 														? "LINE Pay"
 														: payment.method === "CREDIT_CARD"
-															? "クレジットカード"
-															: payment.method}
+														? "クレジットカード"
+														: payment.method}
 												</Td>
 												<Td>{formatPrice(payment.amount)}</Td>
 												<Td>
@@ -605,21 +632,21 @@ export const OrderDetail: React.FC = () => {
 															payment.status === "COMPLETED"
 																? "green"
 																: payment.status === "PENDING"
-																	? "yellow"
-																	: payment.status === "FAILED"
-																		? "red"
-																		: "gray"
+																? "yellow"
+																: payment.status === "FAILED"
+																? "red"
+																: "gray"
 														}
 													>
 														{payment.status === "COMPLETED"
 															? "完了"
 															: payment.status === "PENDING"
-																? "処理中"
-																: payment.status === "FAILED"
-																	? "失敗"
-																	: payment.status === "CANCELLED"
-																		? "キャンセル"
-																		: payment.status}
+															? "処理中"
+															: payment.status === "FAILED"
+															? "失敗"
+															: payment.status === "CANCELLED"
+															? "キャンセル"
+															: payment.status}
 													</Badge>
 												</Td>
 												<Td>{formatDate(new Date(payment.createdAt))}</Td>
@@ -689,11 +716,11 @@ export const OrderDetail: React.FC = () => {
 									required
 								>
 									<option value="pending">処理待ち</option>
-									<option value="paid">支払済み</option>
+									<option value="paid">支払完了</option>
 									<option value="processing">処理中</option>
 									<option value="printing">印刷中</option>
-									<option value="shipped">発送済み</option>
-									<option value="delivered">配送完了</option>
+									<option value="shipped">配送完了</option>
+									<option value="delivered">配達完了</option>
 									<option value="cancelled">キャンセル</option>
 								</Select>
 							</FormControl>
@@ -708,6 +735,26 @@ export const OrderDetail: React.FC = () => {
 									placeholder="管理用のメモを入力してください"
 									rows={4}
 								/>
+							</FormControl>
+
+							<FormControl mt={4} display="flex" alignItems="center">
+								<FormLabel htmlFor="notify-customer" mb="0">
+									顧客に通知する
+								</FormLabel>
+								<Switch
+									id="notify-customer"
+									isChecked={statusForm.notifyCustomer}
+									onChange={(e) =>
+										setStatusForm({
+											...statusForm,
+											notifyCustomer: e.target.checked,
+										})
+									}
+									colorScheme="blue"
+								/>
+								<Tooltip label="LINEで顧客にステータス変更を通知します" ml={2}>
+									<InfoIcon color="gray.500" />
+								</Tooltip>
 							</FormControl>
 						</ModalBody>
 						<ModalFooter>
@@ -727,12 +774,12 @@ export const OrderDetail: React.FC = () => {
 				</ModalContent>
 			</Modal>
 
-			{/* 発送情報更新モーダル */}
+			{/* 配送情報更新モーダル */}
 			<Modal isOpen={isShippingModalOpen} onClose={onShippingModalClose}>
 				<ModalOverlay />
 				<ModalContent>
 					<form onSubmit={handleUpdateShipping}>
-						<ModalHeader>発送情報の更新</ModalHeader>
+						<ModalHeader>配送情報の更新</ModalHeader>
 						<ModalCloseButton />
 						<ModalBody>
 							<FormControl mb={4} isRequired>
@@ -770,7 +817,7 @@ export const OrderDetail: React.FC = () => {
 							</FormControl>
 
 							<FormControl mb={4} isRequired>
-								<FormLabel>発送日</FormLabel>
+								<FormLabel>配送日</FormLabel>
 								<Input
 									type="date"
 									value={shippingForm.shippedAt}
@@ -796,6 +843,26 @@ export const OrderDetail: React.FC = () => {
 										})
 									}
 								/>
+							</FormControl>
+
+							<FormControl mt={4} display="flex" alignItems="center">
+								<FormLabel htmlFor="notify-shipping" mb="0">
+									顧客に配送情報を通知する
+								</FormLabel>
+								<Switch
+									id="notify-shipping"
+									isChecked={shippingForm.notifyCustomer}
+									onChange={(e) =>
+										setShippingForm({
+											...shippingForm,
+											notifyCustomer: e.target.checked,
+										})
+									}
+									colorScheme="teal"
+								/>
+								<Tooltip label="LINEで顧客に配送情報を通知します" ml={2}>
+									<InfoIcon color="gray.500" />
+								</Tooltip>
 							</FormControl>
 						</ModalBody>
 						<ModalFooter>
