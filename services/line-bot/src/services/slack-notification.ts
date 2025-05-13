@@ -1,49 +1,53 @@
 import axios from "axios";
 import { logger } from "../utils/logger.js";
-
-// Slackの設定
-const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL || "";
-const SLACK_CHANNEL = process.env.SLACK_CHANNEL || "#gibtee-orders";
-const SLACK_USERNAME = process.env.SLACK_USERNAME || "Gibtee注文Bot";
-const SLACK_ICON_EMOJI = process.env.SLACK_ICON_EMOJI || ":tshirt:";
+import { config } from "../config/index.js";
 
 /**
- * Slack通知を送信する
+ * Slackへ通知を送信する共通関数
  */
-export const sendSlackNotification = async (
-	message: string,
-	attachments: any[] = [],
-	channel: string = SLACK_CHANNEL,
-): Promise<void> => {
+const sendSlackNotification = async (payload: {
+	channel?: string;
+	username?: string;
+	text?: string;
+	blocks?: any[];
+	attachments?: any[];
+}): Promise<boolean> => {
 	try {
-		if (!SLACK_WEBHOOK_URL) {
-			logger.warn("Slack Webhook URLが設定されていません");
-			return;
+		if (!config.slack.webhookUrl) {
+			logger.warn("Slack webhook URL is not configured");
+			return false;
 		}
 
-		const payload = {
-			channel,
-			username: SLACK_USERNAME,
-			icon_emoji: SLACK_ICON_EMOJI,
-			text: message,
-			attachments,
+		const defaultPayload = {
+			channel: config.slack.channel,
+			username: config.slack.username,
 		};
 
-		await axios.post(SLACK_WEBHOOK_URL, payload);
+		const response = await axios.post(config.slack.webhookUrl, {
+			...defaultPayload,
+			...payload,
+		});
 
-		logger.info(`Slack通知送信成功: ${message}`);
+		if (response.status === 200) {
+			logger.info(`Slack notification sent successfully`);
+			return true;
+		} else {
+			logger.error(`Failed to send Slack notification: ${response.statusText}`);
+			return false;
+		}
 	} catch (error: any) {
-		logger.error(`Slack通知送信エラー: ${error.message}`);
+		logger.error(`Error sending Slack notification: ${error.message}`);
+		return false;
 	}
 };
 
 /**
- * 新規注文のSlack通知
+ * 新規注文をSlackに通知する
  */
 export const notifyNewOrder = async (
 	orderNumber: string,
 	userId: string,
-	productDetails: {
+	orderDetails: {
 		color: string;
 		size: string;
 		quantity: number;
@@ -54,188 +58,275 @@ export const notifyNewOrder = async (
 		prefecture: string;
 		city: string;
 	},
-): Promise<void> => {
-	const colorName = getColorNameJapanese(productDetails.color);
+): Promise<boolean> => {
+	try {
+		// 注文情報を整形
+		const orderInfo = [
+			`*注文番号:* ${orderNumber}`,
+			`*Tシャツ:* ${orderDetails.color} / ${orderDetails.size} / ${orderDetails.quantity}枚`,
+			`*金額:* ¥${orderDetails.amount.toLocaleString()}`,
+			`*お届け先:* ${shippingDetails.prefecture} ${shippingDetails.city}`,
+			`*受取人:* ${shippingDetails.recipientName}`,
+		].join("\n");
 
-	const message = `🎉 新規注文 #${orderNumber}`;
+		// Slackメッセージを構築
+		const blocks = [
+			{
+				type: "header",
+				text: {
+					type: "plain_text",
+					text: "🎉 新規注文が入りました！",
+					emoji: true,
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: orderInfo,
+				},
+			},
+			{
+				type: "context",
+				elements: [
+					{
+						type: "mrkdwn",
+						text: `注文日時: ${new Date().toLocaleString("ja-JP")} | ユーザーID: ${userId}`,
+					},
+				],
+			},
+			{
+				type: "divider",
+			},
+		];
 
-	const attachments = [
-		{
-			color: "#36a64f",
-			fields: [
-				{
-					title: "商品",
-					value: `ジブリ風Tシャツ (${colorName} / ${productDetails.size}) × ${productDetails.quantity}枚`,
-					short: false,
-				},
-				{
-					title: "金額",
-					value: `${productDetails.amount.toLocaleString()}円（税込）`,
-					short: true,
-				},
-				{
-					title: "お届け先",
-					value: `${shippingDetails.recipientName} 様\n${shippingDetails.prefecture}${shippingDetails.city}`,
-					short: true,
-				},
-				{
-					title: "ユーザーID",
-					value: userId,
-					short: true,
-				},
-			],
-			footer: "Gibtee",
-			footer_icon: "https://example.com/gibtee-icon.png",
-			ts: Math.floor(Date.now() / 1000),
-		},
-	];
-
-	await sendSlackNotification(message, attachments);
+		// Slack通知を送信
+		return await sendSlackNotification({
+			text: `新規注文: ${orderNumber}`,
+			blocks,
+		});
+	} catch (error: any) {
+		logger.error(`Error creating new order notification: ${error.message}`);
+		return false;
+	}
 };
 
 /**
- * 決済完了のSlack通知
- */
-export const notifyPaymentCompleted = async (
-	orderNumber: string,
-	paymentMethod: string,
-	amount: number,
-	transactionId: string,
-): Promise<void> => {
-	const message = `💰 決済完了 #${orderNumber}`;
-
-	const attachments = [
-		{
-			color: "#3D9DF3",
-			fields: [
-				{
-					title: "決済方法",
-					value: paymentMethod === "LINE_PAY" ? "LINE Pay" : "クレジットカード",
-					short: true,
-				},
-				{
-					title: "金額",
-					value: `${amount.toLocaleString()}円`,
-					short: true,
-				},
-				{
-					title: "トランザクションID",
-					value: transactionId,
-					short: false,
-				},
-			],
-			footer: "Gibtee",
-			footer_icon: "https://example.com/gibtee-icon.png",
-			ts: Math.floor(Date.now() / 1000),
-		},
-	];
-
-	await sendSlackNotification(message, attachments);
-};
-
-/**
- * 注文ステータス更新のSlack通知
+ * 注文ステータス変更をSlackに通知する
  */
 export const notifyOrderStatusUpdate = async (
 	orderNumber: string,
 	oldStatus: string,
 	newStatus: string,
-): Promise<void> => {
-	const statusEmoji = getStatusEmoji(newStatus);
-	const statusText = getStatusText(newStatus);
+): Promise<boolean> => {
+	try {
+		// ステータスの日本語表記
+		const statusMap: { [key: string]: string } = {
+			pending: "処理待ち",
+			paid: "支払済み",
+			processing: "処理中",
+			printing: "印刷中",
+			shipped: "発送済み",
+			delivered: "配達完了",
+			cancelled: "キャンセル",
+		};
 
-	const message = `${statusEmoji} 注文ステータス更新 #${orderNumber}`;
+		// ステータスに応じたアイコン
+		const statusIcon: { [key: string]: string } = {
+			pending: "⏳",
+			paid: "💰",
+			processing: "🔄",
+			printing: "🖨",
+			shipped: "📦",
+			delivered: "✅",
+			cancelled: "❌",
+		};
 
-	const attachments = [
-		{
-			color: "#FFA500",
-			fields: [
-				{
-					title: "前のステータス",
-					value: getStatusText(oldStatus),
-					short: true,
+		const oldStatusText = statusMap[oldStatus] || oldStatus;
+		const newStatusText = statusMap[newStatus] || newStatus;
+		const icon = statusIcon[newStatus] || "📋";
+
+		// Slackメッセージを構築
+		const blocks = [
+			{
+				type: "header",
+				text: {
+					type: "plain_text",
+					text: `${icon} 注文ステータスが更新されました`,
+					emoji: true,
 				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: `*注文番号:* ${orderNumber}\n*ステータス:* ${oldStatusText} → *${newStatusText}*`,
+				},
+			},
+			{
+				type: "context",
+				elements: [
+					{
+						type: "mrkdwn",
+						text: `更新日時: ${new Date().toLocaleString("ja-JP")}`,
+					},
+				],
+			},
+			{
+				type: "divider",
+			},
+		];
+
+		// Slack通知を送信
+		return await sendSlackNotification({
+			text: `注文ステータス更新: ${orderNumber} (${oldStatusText} → ${newStatusText})`,
+			blocks,
+		});
+	} catch (error: any) {
+		logger.error(`Error creating status update notification: ${error.message}`);
+		return false;
+	}
+};
+
+/**
+ * 支払い完了をSlackに通知する
+ */
+export const notifyPaymentComplete = async (
+	orderNumber: string,
+	paymentMethod: string,
+	amount: number,
+): Promise<boolean> => {
+	try {
+		// 支払い方法の日本語表記
+		const methodMap: { [key: string]: string } = {
+			LINE_PAY: "LINE Pay",
+			CREDIT_CARD: "クレジットカード",
+		};
+
+		const methodText = methodMap[paymentMethod] || paymentMethod;
+
+		// Slackメッセージを構築
+		const blocks = [
+			{
+				type: "header",
+				text: {
+					type: "plain_text",
+					text: "💸 支払いが完了しました",
+					emoji: true,
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: [
+						`*注文番号:* ${orderNumber}`,
+						`*支払い方法:* ${methodText}`,
+						`*金額:* ¥${amount.toLocaleString()}`,
+					].join("\n"),
+				},
+			},
+			{
+				type: "context",
+				elements: [
+					{
+						type: "mrkdwn",
+						text: `支払日時: ${new Date().toLocaleString("ja-JP")}`,
+					},
+				],
+			},
+			{
+				type: "divider",
+			},
+		];
+
+		// Slack通知を送信
+		return await sendSlackNotification({
+			text: `支払い完了: ${orderNumber} (¥${amount.toLocaleString()})`,
+			blocks,
+		});
+	} catch (error: any) {
+		logger.error(
+			`Error creating payment complete notification: ${error.message}`,
+		);
+		return false;
+	}
+};
+
+/**
+ * エラーをSlackに通知する
+ */
+export const notifyError = async (
+	title: string,
+	errorMessage: string,
+	details?: any,
+): Promise<boolean> => {
+	try {
+		// エラー詳細を整形
+		let detailsText = "";
+		if (details) {
+			try {
+				if (typeof details === "object") {
+					detailsText = "```" + JSON.stringify(details, null, 2) + "```";
+				} else {
+					detailsText = "```" + details.toString() + "```";
+				}
+			} catch (e) {
+				detailsText = "```(エラー詳細を変換できませんでした)```";
+			}
+		}
+
+		// Slackメッセージを構築
+		const blocks = [
+			{
+				type: "header",
+				text: {
+					type: "plain_text",
+					text: `🚨 ${title}`,
+					emoji: true,
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: `*エラー:* ${errorMessage}`,
+				},
+			},
+		];
+
+		// 詳細情報があれば追加
+		if (detailsText) {
+			blocks.push({
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: `*詳細:*\n${detailsText}`,
+				},
+			});
+		}
+
+		blocks.push({
+			type: "context",
+			elements: [
 				{
-					title: "新しいステータス",
-					value: statusText,
-					short: true,
+					type: "mrkdwn",
+					text: `発生日時: ${new Date().toLocaleString("ja-JP")}`,
 				},
 			],
-			footer: "Gibtee",
-			footer_icon: "https://example.com/gibtee-icon.png",
-			ts: Math.floor(Date.now() / 1000),
-		},
-	];
+		});
 
-	await sendSlackNotification(message, attachments);
-};
+		blocks.push({
+			type: "divider",
+		});
 
-/**
- * ステータスに対応する絵文字を取得
- */
-const getStatusEmoji = (status: string): string => {
-	switch (status) {
-		case "pending":
-			return "⏳";
-		case "payment_pending":
-			return "💳";
-		case "paid":
-			return "💰";
-		case "preparing":
-			return "🔧";
-		case "shipped":
-			return "📦";
-		case "delivered":
-			return "✅";
-		case "canceled":
-			return "❌";
-		case "payment_failed":
-			return "!";
-		default:
-			return "📝";
-	}
-};
-
-/**
- * ステータスに対応する日本語テキストを取得
- */
-const getStatusText = (status: string): string => {
-	switch (status) {
-		case "pending":
-			return "注文受付";
-		case "payment_pending":
-			return "決済待ち";
-		case "paid":
-			return "決済完了";
-		case "preparing":
-			return "準備中";
-		case "shipped":
-			return "発送済み";
-		case "delivered":
-			return "配達済み";
-		case "canceled":
-			return "キャンセル";
-		case "payment_failed":
-			return "決済失敗";
-		default:
-			return status;
-	}
-};
-
-/**
- * 色名を日本語表記に変換
- */
-const getColorNameJapanese = (colorCode: string): string => {
-	switch (colorCode) {
-		case "white":
-			return "ホワイト";
-		case "black":
-			return "ブラック";
-		case "navy":
-			return "ネイビー";
-		case "red":
-			return "レッド";
-		default:
-			return "ホワイト";
+		// Slack通知を送信
+		return await sendSlackNotification({
+			text: `エラー: ${title}`,
+			blocks,
+		});
+	} catch (error: any) {
+		logger.error(`Error creating error notification: ${error.message}`);
+		return false;
 	}
 };

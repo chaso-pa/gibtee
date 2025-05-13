@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import Stripe from "stripe";
 import { prisma } from "../lib/prisma.js";
 import { logger } from "../utils/logger.js";
+import { notifyPaymentComplete } from "./slack-notification.js";
 
 // 環境変数から設定を読み込む
 const LINE_PAY_CHANNEL_ID = process.env.LINE_PAY_CHANNEL_ID || "";
@@ -17,7 +18,7 @@ const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || "";
 
 // Stripeインスタンスの初期化
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
-	apiVersion: "2025-04-30.basil", // 最新のAPI版を使用
+	apiVersion: "2025-04-30.basil", // 最新のAPIバージョンを使用
 });
 
 // 決済方法の定義
@@ -40,7 +41,7 @@ export const createLinePayRequest = async (
 			`LINE Pay決済リクエスト開始: 注文番号=${orderNumber}, 金額=${amount}`,
 		);
 
-		// リクエストデータの準備
+		// リクエストデータの構築
 		const requestId = uuidv4();
 		const payload = {
 			amount,
@@ -68,7 +69,7 @@ export const createLinePayRequest = async (
 			},
 		};
 
-		// ヘッダーの準備（HMAC署名を含む）
+		// ヘッダーの構築（HMACシグネチャを含む）
 		const nonce = uuidv4();
 		const requestUrl = "/v3/payments/request";
 		const requestBody = JSON.stringify(payload);
@@ -134,13 +135,13 @@ export const confirmLinePayPayment = async (
 			`LINE Pay決済確定処理開始: transactionId=${transactionId}, 金額=${amount}`,
 		);
 
-		// リクエストデータの準備
+		// リクエストデータの構築
 		const payload = {
 			amount,
 			currency: "JPY",
 		};
 
-		// ヘッダーの準備（HMAC署名を含む）
+		// ヘッダーの構築（HMACシグネチャを含む）
 		const nonce = uuidv4();
 		const requestUrl = `/v3/payments/${transactionId}/confirm`;
 		const requestBody = JSON.stringify(payload);
@@ -168,6 +169,9 @@ export const confirmLinePayPayment = async (
 			// 成功時は支払い情報を更新
 			const payment = await prisma.payment.findFirst({
 				where: { transactionId },
+				include: {
+					order: true,
+				},
 			});
 
 			if (!payment) {
@@ -184,6 +188,13 @@ export const confirmLinePayPayment = async (
 				where: { id: payment.orderId },
 				data: { status: "paid" },
 			});
+
+			// Slack通知を送信
+			await notifyPaymentComplete(
+				payment.order.orderNumber,
+				PaymentMethod.LINE_PAY,
+				amount,
+			);
 
 			logger.info(`LINE Pay決済確定処理成功: transactionId=${transactionId}`);
 			return true;
@@ -305,6 +316,13 @@ export const checkStripeSessionStatus = async (
 				data: { status: "paid" },
 			});
 
+			// Slack通知を送信
+			await notifyPaymentComplete(
+				payment.order.orderNumber,
+				PaymentMethod.CREDIT_CARD,
+				payment.amount,
+			);
+
 			logger.info(`Stripe決済完了: sessionId=${sessionId}`);
 			return {
 				status: "COMPLETED",
@@ -361,6 +379,9 @@ export const handleStripeWebhook = async (
 			// 支払い情報を更新
 			const payment = await prisma.payment.findFirst({
 				where: { transactionId: session.id },
+				include: {
+					order: true,
+				},
 			});
 
 			if (payment) {
@@ -374,6 +395,13 @@ export const handleStripeWebhook = async (
 					where: { id: payment.orderId },
 					data: { status: "paid" },
 				});
+
+				// Slack通知を送信
+				await notifyPaymentComplete(
+					payment.order.orderNumber,
+					PaymentMethod.CREDIT_CARD,
+					payment.amount,
+				);
 
 				logger.info(`Webhook: 決済完了処理成功 sessionId=${session.id}`);
 			}

@@ -4,7 +4,7 @@ import { logger } from "../utils/logger.js";
 import {
 	notifyNewOrder,
 	notifyOrderStatusUpdate,
-} from "./slack-notification.js";
+} from "./slack-notification.ts";
 
 /**
  * 注文レコードを作成する
