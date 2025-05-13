@@ -1,159 +1,159 @@
-// src/features/auth/Login.tsx
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
 	Box,
 	Button,
 	FormControl,
 	FormLabel,
-	Heading,
 	Input,
 	Stack,
+	Heading,
 	Text,
-	FormErrorMessage,
 	useToast,
-	InputGroup,
-	InputRightElement,
-	IconButton,
+	Alert,
+	AlertIcon,
+	FormErrorMessage,
+	Flex,
 } from "@chakra-ui/react";
-import { useState } from "react";
-import { useAuth } from "../../providers/auth";
-import { APP_NAME } from "../../config";
-import { useNavigate, useLocation } from "react-router-dom";
-import { FiEye, FiEyeOff } from "react-icons/fi";
+import { api } from "../../lib/api";
+import { config } from "../../config";
 
-export const Login = () => {
+export const Login: React.FC = () => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [showPassword, setShowPassword] = useState(false);
-	const [errors, setErrors] = useState({
-		email: "",
-		password: "",
-	});
-	const { login, isLoading, error } = useAuth();
-	const toast = useToast();
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState("");
+	const [isEmailInvalid, setIsEmailInvalid] = useState(false);
+	const [isPasswordInvalid, setIsPasswordInvalid] = useState(false);
+
 	const navigate = useNavigate();
 	const location = useLocation();
+	const toast = useToast();
 
 	const from = location.state?.from?.pathname || "/dashboard";
 
+	const validateEmail = (email: string) => {
+		return email.trim() !== "";
+	};
+
+	const validatePassword = (password: string) => {
+		return password.trim() !== "";
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setErrors({ email: "", password: "" });
 
-		let hasError = false;
-		if (!email) {
-			setErrors((prev) => ({
-				...prev,
-				email: "メールアドレスを入力してください",
-			}));
-			hasError = true;
-		}
-		if (!password) {
-			setErrors((prev) => ({
-				...prev,
-				password: "パスワードを入力してください",
-			}));
-			hasError = true;
+		// バリデーション
+		const isEmailValid = validateEmail(email);
+		const isPasswordValid = validatePassword(password);
+
+		setIsEmailInvalid(!isEmailValid);
+		setIsPasswordInvalid(!isPasswordValid);
+
+		if (!isEmailValid || !isPasswordValid) {
+			return;
 		}
 
-		if (hasError) return;
+		setIsLoading(true);
+		setError("");
 
 		try {
-			await login({ email, password });
+			// ログインAPI呼び出し
+			const response = await api.post("/auth/login", { email, password });
+
+			// ログイン成功
+			const { token, user } = response.data;
+
+			// トークンをローカルストレージに保存
+			localStorage.setItem("auth_token", token);
+			localStorage.setItem("user", JSON.stringify(user));
+
+			// 成功通知
 			toast({
 				title: "ログイン成功",
-				description: "gibtee管理パネルへようこそ",
+				description: "管理画面へようこそ",
 				status: "success",
 				duration: 3000,
 				isClosable: true,
 			});
+
+			// リダイレクト
 			navigate(from, { replace: true });
-		} catch (error) {
-			// エラーはuseAuthで処理されるため、ここでは何もしない
+		} catch (error: any) {
+			// エラー処理
+			setError(
+				error.response?.data?.message ||
+					"ログインに失敗しました。認証情報をご確認ください。",
+			);
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
 	return (
-		<Box
-			minH="100vh"
-			display="flex"
-			alignItems="center"
-			justifyContent="center"
-			bg="gray.50"
-		>
-			<Box
-				p={8}
-				maxWidth="400px"
-				borderWidth={1}
-				borderRadius={8}
-				boxShadow="lg"
-				bg="white"
-			>
-				<Box textAlign="center" mb={8}>
-					<Heading size="lg">{APP_NAME}</Heading>
-					<Text mt={2} color="gray.500">
-						管理画面にログイン
+		<Flex minH="100vh" align="center" justify="center" bg="gray.50">
+			<Box maxW="md" w="full" p={8} bg="white" borderRadius="lg" boxShadow="lg">
+				<Stack spacing={6} align="center" mb={8}>
+					<Heading size="xl">{config.appName}</Heading>
+					<Text fontSize="md" color="gray.600">
+						管理者アカウントでログインしてください
 					</Text>
-				</Box>
+				</Stack>
 
 				{error && (
-					<Box my={4} bg="red.50" p={3} borderRadius="md">
-						<Text color="red.500" fontSize="sm">
-							{error}
-						</Text>
-					</Box>
+					<Alert status="error" mb={6} borderRadius="md">
+						<AlertIcon />
+						{error}
+					</Alert>
 				)}
 
 				<form onSubmit={handleSubmit}>
 					<Stack spacing={4}>
-						<FormControl isInvalid={!!errors.email}>
-							<FormLabel htmlFor="email">メールアドレス</FormLabel>
+						<FormControl isInvalid={isEmailInvalid} isRequired>
+							<FormLabel>メールアドレス</FormLabel>
 							<Input
-								id="email"
 								type="email"
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
-								placeholder="example@gibtee.com"
+								placeholder="メールアドレスを入力"
 							/>
-							<FormErrorMessage>{errors.email}</FormErrorMessage>
+							{isEmailInvalid && (
+								<FormErrorMessage>メールアドレスは必須です</FormErrorMessage>
+							)}
 						</FormControl>
 
-						<FormControl isInvalid={!!errors.password}>
-							<FormLabel htmlFor="password">パスワード</FormLabel>
-							<InputGroup>
-								<Input
-									id="password"
-									type={showPassword ? "text" : "password"}
-									value={password}
-									onChange={(e) => setPassword(e.target.value)}
-									placeholder="パスワードを入力"
-								/>
-								<InputRightElement>
-									<IconButton
-										aria-label={
-											showPassword ? "パスワードを隠す" : "パスワードを表示"
-										}
-										icon={showPassword ? <FiEyeOff /> : <FiEye />}
-										variant="ghost"
-										size="sm"
-										onClick={() => setShowPassword(!showPassword)}
-									/>
-								</InputRightElement>
-							</InputGroup>
-							<FormErrorMessage>{errors.password}</FormErrorMessage>
+						<FormControl isInvalid={isPasswordInvalid} isRequired>
+							<FormLabel>パスワード</FormLabel>
+							<Input
+								type="password"
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								placeholder="パスワードを入力"
+							/>
+							{isPasswordInvalid && (
+								<FormErrorMessage>パスワードは必須です</FormErrorMessage>
+							)}
 						</FormControl>
 
 						<Button
-							colorScheme="blue"
-							width="full"
-							mt={4}
 							type="submit"
+							colorScheme="blue"
+							size="lg"
+							fontSize="md"
 							isLoading={isLoading}
+							loadingText="ログイン中..."
+							w="full"
+							mt={4}
 						>
 							ログイン
 						</Button>
 					</Stack>
 				</form>
+
+				<Text mt={8} fontSize="sm" color="gray.500" textAlign="center">
+					※デモ用アカウント: admin@gibtee.com / adminpassword
+				</Text>
 			</Box>
-		</Box>
+		</Flex>
 	);
 };

@@ -3,7 +3,6 @@ import {
 	Box,
 	CloseButton,
 	Flex,
-	Text,
 	type BoxProps,
 	Link,
 	VStack,
@@ -20,7 +19,7 @@ import {
 	FiUsers,
 } from "react-icons/fi";
 import type { IconType } from "react-icons";
-import { APP_NAME } from "../../config";
+import { config } from "../../config";
 
 interface SidebarProps extends BoxProps {
 	onClose: () => void;
@@ -54,7 +53,7 @@ export const Sidebar = ({ onClose, ...rest }: SidebarProps) => {
 		>
 			<Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
 				<Heading as="h1" fontSize="2xl" fontWeight="bold">
-					{APP_NAME}
+					{config.appName}
 				</Heading>
 				<CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
 			</Flex>

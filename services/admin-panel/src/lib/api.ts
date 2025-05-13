@@ -1,9 +1,9 @@
 // src/lib/api.ts
 import axios from "axios";
-import { API_URL } from "../config";
+import { config } from "../config";
 
 export const api = axios.create({
-	baseURL: API_URL,
+	baseURL: config.apiUrl,
 	headers: {
 		"Content-Type": "application/json",
 	},

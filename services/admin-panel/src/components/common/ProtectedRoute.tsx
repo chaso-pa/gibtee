@@ -1,29 +1,16 @@
-// src/components/common/ProtectedRoute.tsx
+import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "../../providers/auth";
-import { Spinner, Center } from "@chakra-ui/react";
 
-export const ProtectedRoute = () => {
-	const { isAuthenticated, isLoading } = useAuth();
+export const ProtectedRoute: React.FC = () => {
 	const location = useLocation();
+	const token = localStorage.getItem("auth_token");
 
-	if (isLoading) {
-		return (
-			<Center h="100vh">
-				<Spinner
-					thickness="4px"
-					speed="0.65s"
-					emptyColor="gray.200"
-					color="brand.500"
-					size="xl"
-				/>
-			</Center>
-		);
-	}
-
-	if (!isAuthenticated) {
+	// 認証チェック
+	if (!token) {
+		// ログインしていない場合はログインページにリダイレクト
 		return <Navigate to="/login" state={{ from: location }} replace />;
 	}
 
+	// ログインしている場合は子ルートをレンダリング
 	return <Outlet />;
 };

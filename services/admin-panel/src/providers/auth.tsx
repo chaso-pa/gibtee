@@ -8,7 +8,6 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import type { User, LoginCredentials, ApiError } from "../types";
-import { mockLogin, mockGetUser } from "../utils/mock";
 import { api } from "../lib/api";
 
 interface AuthContextType {
@@ -41,15 +40,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 		try {
 			setIsLoading(true);
 
-			// 開発環境ではモックサービスを使用
-			// 本番環境ではAPIを使用
-			let userData;
-			if (import.meta.env.DEV) {
-				userData = await mockGetUser();
-			} else {
-				const response = await api.get<User>("/auth/me");
-				userData = response.data;
-			}
+			const response = await api.get<User>("/auth/me");
+			const userData = response.data;
 
 			setUser(userData);
 			setError(null);
@@ -68,15 +60,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 			setIsLoading(true);
 			setError(null);
 
-			// 開発環境ではモックサービスを使用
-			// 本番環境ではAPIを使用
-			let response;
-			if (import.meta.env.DEV) {
-				response = await mockLogin(credentials.email, credentials.password);
-			} else {
-				const apiResponse = await api.post("/auth/login", credentials);
-				response = apiResponse.data;
-			}
+			const apiResponse = await api.post("/auth/login", credentials);
+			const response = apiResponse.data;
 
 			localStorage.setItem("auth_token", response.token);
 			setUser(response.user);
