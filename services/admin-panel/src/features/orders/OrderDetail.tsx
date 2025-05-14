@@ -85,7 +85,12 @@ const updateOrderStatus = async ({
 	status,
 	adminMemo,
 	notifyCustomer,
-}: { orderId: string; status: OrderStatus; adminMemo?: string; notifyCustomer: boolean }) => {
+}: {
+	orderId: string;
+	status: OrderStatus;
+	adminMemo?: string;
+	notifyCustomer: boolean;
+}) => {
 	const { data } = await api.patch(`/api/orders/${orderId}/status`, {
 		status,
 		adminMemo,
@@ -122,7 +127,9 @@ const updateShippingInfo = async ({
 
 // 通知履歴取得API関数
 const fetchOrderNotifications = async (orderId: string) => {
-	const { data } = await api.get<{ notifications: Notification[] }>(`/api/orders/${orderId}/notifications`);
+	const { data } = await api.get<{ notifications: Notification[] }>(
+		`/api/orders/${orderId}/notifications`,
+	);
 	return data.notifications;
 };
 
@@ -222,7 +229,9 @@ export const OrderDetail: React.FC = () => {
 				isClosable: true,
 			});
 			queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-			queryClient.invalidateQueries({ queryKey: ["orderNotifications", orderId] });
+			queryClient.invalidateQueries({
+				queryKey: ["orderNotifications", orderId],
+			});
 			onStatusModalClose();
 		},
 		onError: (error: any) => {
@@ -247,7 +256,9 @@ export const OrderDetail: React.FC = () => {
 				isClosable: true,
 			});
 			queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-			queryClient.invalidateQueries({ queryKey: ["orderNotifications", orderId] });
+			queryClient.invalidateQueries({
+				queryKey: ["orderNotifications", orderId],
+			});
 			onShippingModalClose();
 		},
 		onError: (error: any) => {
@@ -410,12 +421,12 @@ export const OrderDetail: React.FC = () => {
 										{order.shirtColor === "white"
 											? "白"
 											: order.shirtColor === "black"
-											? "黒"
-											: order.shirtColor === "navy"
-											? "紺"
-											: order.shirtColor === "red"
-											? "赤"
-											: order.shirtColor}
+												? "黒"
+												: order.shirtColor === "navy"
+													? "紺"
+													: order.shirtColor === "red"
+														? "赤"
+														: order.shirtColor}
 									</Text>
 								</Box>
 								<Box>
@@ -574,10 +585,12 @@ export const OrderDetail: React.FC = () => {
 										顧客通知状況
 									</Text>
 									<HStack>
-										<Badge colorScheme={order.notifiedShipping ? "green" : "gray"}>
+										<Badge
+											colorScheme={order.notifiedShipping ? "green" : "gray"}
+										>
 											{order.notifiedShipping ? "発送通知済み" : "未通知"}
 										</Badge>
-										<Tooltip label="配送情報をLINEに通知済みかどうかを示します">  
+										<Tooltip label="配送情報をLINEに通知済みかどうかを示します">
 											<InfoIcon color="gray.500" />
 										</Tooltip>
 									</HStack>
@@ -648,8 +661,8 @@ export const OrderDetail: React.FC = () => {
 													{payment.method === "LINE_PAY"
 														? "LINE Pay"
 														: payment.method === "CREDIT_CARD"
-														? "クレジットカード"
-														: payment.method}
+															? "クレジットカード"
+															: payment.method}
 												</Td>
 												<Td>{formatPrice(payment.amount)}</Td>
 												<Td>
@@ -658,21 +671,21 @@ export const OrderDetail: React.FC = () => {
 															payment.status === "COMPLETED"
 																? "green"
 																: payment.status === "PENDING"
-																? "yellow"
-																: payment.status === "FAILED"
-																? "red"
-																: "gray"
+																	? "yellow"
+																	: payment.status === "FAILED"
+																		? "red"
+																		: "gray"
 														}
 													>
 														{payment.status === "COMPLETED"
 															? "完了"
 															: payment.status === "PENDING"
-															? "処理中"
-															: payment.status === "FAILED"
-															? "失敗"
-															: payment.status === "CANCELLED"
-															? "キャンセル"
-															: payment.status}
+																? "処理中"
+																: payment.status === "FAILED"
+																	? "失敗"
+																	: payment.status === "CANCELLED"
+																		? "キャンセル"
+																		: payment.status}
 													</Badge>
 												</Td>
 												<Td>{formatDate(new Date(payment.createdAt))}</Td>
@@ -735,7 +748,7 @@ export const OrderDetail: React.FC = () => {
 											<Text color="gray.500">履歴がありません</Text>
 										)}
 									</TabPanel>
-									
+
 									{/* 通知履歴タブ */}
 									<TabPanel p={3}>
 										{isLoadingNotifications ? (
@@ -752,7 +765,7 @@ export const OrderDetail: React.FC = () => {
 													} catch (e) {
 														console.error("通知内容のパースに失敗:", e);
 													}
-													
+
 													return (
 														<Box
 															key={notification.id}
@@ -760,16 +773,25 @@ export const OrderDetail: React.FC = () => {
 															borderRadius="md"
 															bg="gray.50"
 															borderLeft="4px solid"
-															borderLeftColor={notification.success ? "green.400" : "red.400"}
+															borderLeftColor={
+																notification.success ? "green.400" : "red.400"
+															}
 														>
 															<Flex justifyContent="space-between" mb={1}>
 																<HStack>
-																	<Badge colorScheme={notification.type === "STATUS_UPDATE" ? "blue" : "teal"}>
+																	<Badge
+																		colorScheme={
+																			notification.type === "STATUS_UPDATE"
+																				? "blue"
+																				: "teal"
+																		}
+																	>
 																		{notification.type === "STATUS_UPDATE" ? (
 																			<>
 																				<RepeatIcon mr={1} /> ステータス通知
 																			</>
-																		) : notification.type === "SHIPPING_UPDATE" ? (
+																		) : notification.type ===
+																			"SHIPPING_UPDATE" ? (
 																			<>
 																				<BellIcon mr={1} /> 発送通知
 																			</>
@@ -777,8 +799,14 @@ export const OrderDetail: React.FC = () => {
 																			notification.type
 																		)}
 																	</Badge>
-																	<Badge colorScheme={notification.success ? "green" : "red"}>
-																		{notification.success ? "送信成功" : "送信失敗"}
+																	<Badge
+																		colorScheme={
+																			notification.success ? "green" : "red"
+																		}
+																	>
+																		{notification.success
+																			? "送信成功"
+																			: "送信失敗"}
 																	</Badge>
 																</HStack>
 																<Text fontSize="xs" color="gray.500">
@@ -786,15 +814,17 @@ export const OrderDetail: React.FC = () => {
 																	{formatDate(new Date(notification.sentAt))}
 																</Text>
 															</Flex>
-															
+
 															{content && (content as any).message && (
 																<Text mt={2}>{(content as any).message}</Text>
 															)}
-															
+
 															{notification.errorMessage && (
 																<Alert status="error" size="sm" mt={2} p={2}>
 																	<AlertIcon />
-																	<Text fontSize="xs">{notification.errorMessage}</Text>
+																	<Text fontSize="xs">
+																		{notification.errorMessage}
+																	</Text>
 																</Alert>
 															)}
 														</Box>
