@@ -11,13 +11,13 @@ datasource db {
 }
 
 model User {
-  id               Int       @id @default(autoincrement())
-  lineUserId       String    @unique @map("line_user_id")
-  displayName      String?   @map("display_name")
-  profileImageUrl  String?   @map("profile_image_url")
-  status           UserStatus @default(active)
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  id              Int        @id @default(autoincrement())
+  lineUserId      String     @unique @map("line_user_id")
+  displayName     String?    @map("display_name")
+  profileImageUrl String?    @map("profile_image_url")
+  status          UserStatus @default(active)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
 
   // リレーション
   images        Image[]
@@ -30,17 +30,17 @@ model User {
 }
 
 model Image {
-  id                 Int          @id @default(autoincrement())
-  userId             Int          @map("user_id")
-  originalImagePath  String       @map("original_image_path")
-  ghibliImagePath    String?      @map("ghibli_image_path")
-  tshirtPreviewPath  String?      @map("tshirt_preview_path")
-  status             ImageStatus @default(pending)
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @updatedAt @map("updated_at")
+  id                Int         @id @default(autoincrement())
+  userId            Int         @map("user_id")
+  originalImagePath String      @map("original_image_path")
+  ghibliImagePath   String?     @map("ghibli_image_path")
+  tshirtPreviewPath String?     @map("tshirt_preview_path")
+  status            ImageStatus @default(pending)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
 
   // リレーション
-  user    User    @relation(fields: [userId], references: [id])
+  user   User    @relation(fields: [userId], references: [id])
   orders Order[]
 
   @@index([userId])
@@ -49,15 +49,15 @@ model Image {
 }
 
 model Order {
-  id            Int          @id @default(autoincrement())
-  userId        Int          @map("user_id")
-  imageId       Int          @map("image_id")
-  orderNumber   String       @unique @map("order_number")
-  status        OrderStatus @default(pending)
-  shirtSize     ShirtSize
-  shirtColor    ShirtColor   @default(white)
-  quantity      Int          @default(1)
-  price         Decimal      @db.Decimal(10, 2)
+  id          Int         @id @default(autoincrement())
+  userId      Int         @map("user_id")
+  imageId     Int         @map("image_id")
+  orderNumber String      @unique @map("order_number")
+  status      OrderStatus @default(pending)
+  shirtSize   ShirtSize
+  shirtColor  ShirtColor  @default(white)
+  quantity    Int         @default(1)
+  price       Decimal     @db.Decimal(10, 2)
 
   // 配送先情報
   recipientName  String? @map("recipient_name")
@@ -69,12 +69,12 @@ model Order {
   buildingName   String? @map("building_name")
 
   // 配送状況のフィールド
-  shippingStatus       String? // "preparing", "shipped", "delivered" など
-  shippingCarrier      String? // 配送業者
-  trackingNumber       String? // 追跡番号
-  shippedAt            DateTime? // 発送日時
-  estimatedDeliveryAt  DateTime? // 配送予定日時
-  deliveredAt          DateTime? // 配送完了日時
+  shippingStatus      String? // "preparing", "shipped", "delivered" など
+  shippingCarrier     String? // 配送業者
+  trackingNumber      String? // 追跡番号
+  shippedAt           DateTime? // 発送日時
+  estimatedDeliveryAt DateTime? // 配送予定日時
+  deliveredAt         DateTime? // 配送完了日時
 
   // 管理者・管理用情報のフィールド
   adminMemo        String? // 管理者用メモ
@@ -82,16 +82,16 @@ model Order {
   hasPrintingIssue Boolean @default(false) // 印刷上の問題がある
 
   // キャンセル・返品情報
-  isCancelled         Boolean   @default(false)
-  cancelledAt         DateTime? // キャンセル日時
-  cancellationReason  String? // キャンセル理由
-  isRefunded          Boolean   @default(false) // 返金済みか
-  refundedAt          DateTime? // 返金日時
+  isCancelled        Boolean   @default(false)
+  cancelledAt        DateTime? // キャンセル日時
+  cancellationReason String? // キャンセル理由
+  isRefunded         Boolean   @default(false) // 返金済みか
+  refundedAt         DateTime? // 返金日時
 
   // 通知情報
-  notifiedStatus     Boolean @default(false) // ステータス通知済み
-  notifiedShipping   Boolean @default(false) // 発送通知済み
-  notifiedDelivery   Boolean @default(false) // 配送完了通知済み
+  notifiedStatus   Boolean @default(false) // ステータス通知済み
+  notifiedShipping Boolean @default(false) // 発送通知済み
+  notifiedDelivery Boolean @default(false) // 配送完了通知済み
 
   // 印刷・加工情報
   printStatus String? // "waiting", "printing", "printed", "failed" など
@@ -104,23 +104,23 @@ model Order {
   discountAmount Int? // 割引額
 
   // 関連モデル
-  paymentId       Int?
-  payments        Payment[] // 複数の支払い実行を記録
-  orderHistories  OrderHistory[]
-  notifications   Notification[] // 追加: 通知履歴
+  paymentId      Int?
+  payments       Payment[] // 複数の支払い実行を記録
+  orderHistories OrderHistory[]
+  notifications  Notification[] // 追加: 通知履歴
 
   // レビュー関連
   hasReviewed Boolean @default(false)
   reviewId    Int?
 
   // その他
-  notes      String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // リレーション
-  user   User   @relation(fields: [userId], references: [id])
-  image  Image  @relation(fields: [imageId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+  image Image @relation(fields: [imageId], references: [id])
 
   @@index([orderNumber])
   @@index([status])
@@ -144,16 +144,16 @@ model OrderHistory {
 
 // 通知履歴モデル
 model Notification {
-  id            Int               @id @default(autoincrement())
-  orderId       Int
-  order         Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  type          NotificationType
-  content       String            @db.Text // 通知内容（JSON形式）
-  sentAt        DateTime          // 送信日時
-  success       Boolean           @default(false) // 送信成功フラグ
-  errorMessage  String?           @db.Text // エラーメッセージ（失敗時）
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id           Int              @id @default(autoincrement())
+  orderId      Int
+  order        Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type         NotificationType
+  content      String           @db.Text // 通知内容（JSON形式）
+  sentAt       DateTime // 送信日時
+  success      Boolean          @default(false) // 送信成功フラグ
+  errorMessage String?          @db.Text // エラーメッセージ（失敗時）
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   @@index([orderId])
   @@index([type])
@@ -258,8 +258,8 @@ enum ShirtSize {
 
 // 通知タイプの定義
 enum NotificationType {
-  STATUS_UPDATE     // ステータス更新通知
-  SHIPPING_UPDATE   // 配送情報更新通知
-  ORDER_REMINDER    // 注文リマインダー
-  PAYMENT_REMINDER  // 支払いリマインダー
+  STATUS_UPDATE // ステータス更新通知
+  SHIPPING_UPDATE // 配送情報更新通知
+  ORDER_REMINDER // 注文リマインダー
+  PAYMENT_REMINDER // 支払いリマインダー
 }
