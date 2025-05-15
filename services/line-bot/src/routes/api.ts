@@ -5,8 +5,10 @@ import {
 	getOrderById,
 	updateOrderStatus,
 	updateOrderShipping,
+	getOrderNotifications,
 } from "../controllers/order.js";
 import { getImageSignedUrl } from "@/controllers/image.js";
+import { getNotifications } from "@/controllers/notification.js";
 
 const apiRouter = express.Router();
 
@@ -25,7 +27,12 @@ apiRouter.patch("/orders/:id/status", updateOrderStatus);
 // 発送情報の更新
 apiRouter.patch("/orders/:id/shipping", updateOrderShipping);
 
+apiRouter.get("/orders/:id/notifications", getOrderNotifications);
+
 // 発送情報の更新
 apiRouter.get("/images/:id/signed-url", getImageSignedUrl);
+
+// 通知情報の取得
+apiRouter.get("/notifications", getNotifications);
 
 export default apiRouter;
