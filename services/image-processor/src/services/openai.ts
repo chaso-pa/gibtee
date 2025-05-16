@@ -17,11 +17,11 @@ const openai = new OpenAI({
  * ジブリ風のプロンプトテンプレート
  */
 const GHIBLI_STYLE_PROMPT =
-	"Transform this image into a Studio Ghibli animation style. " +
-	"Use soft, warm colors, delicate linework, and rich natural elements typical of Hayao Miyazaki films. " +
+	"Transform this image into a whimsical and nature-inspired ghibli animation style. " +
+	"Use soft, warm tones, intricate linework, and rich natural elements to evoke a sense of wonder and tranquility. " +
 	"Maintain the essence of the original image while applying the distinctive Ghibli aesthetic " +
 	"similar to movies like 'My Neighbor Totoro', 'Spirited Away', and 'Howl's Moving Castle'. " +
-	"Keep the same composition and main elements, but convert to hand-drawn animation style.";
+	"Retain the original composition and key elements, but reimagine it in a unique artistic style.";
 
 /**
  * 画像をジブリ風に変換する
