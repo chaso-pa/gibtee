@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # テスト用MySQLデータベース
+  db-test:
+    image: mysql:8.0
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: gibtee_test
+      MYSQL_USER: test-user
+      MYSQL_PASSWORD: test-password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-test-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "test-user", "-ptest-password"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # テスト用S3モック（MinIO）
+  s3-mock:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: test-access-key
+      MINIO_ROOT_PASSWORD: test-secret-key
+    volumes:
+      - minio-test-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  # テスト初期化を行うサービス
+  test-setup:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      db-test:
+        condition: service_healthy
+      s3-mock:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=mysql://test-user:test-password@db-test:3306/gibtee_test
+      - AWS_REGION=ap-southeast-1
+      - AWS_ACCESS_KEY_ID=test-access-key
+      - AWS_SECRET_ACCESS_KEY=test-secret-key
+      - AWS_S3_BUCKET=test-bucket
+      - AWS_ENDPOINT=http://s3-mock:9000
+    volumes:
+      - .:/app
+    command: >
+      sh -c "npm run db:setup:test && npm run test:seed"
+
+  # E2Eテストを実行するコンテナ
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      test-setup:
+        condition: service_completed_successfully
+    environment:
+      - DATABASE_URL=mysql://test-user:test-password@db-test:3306/gibtee_test
+      - AWS_REGION=ap-southeast-1
+      - AWS_ACCESS_KEY_ID=test-access-key
+      - AWS_SECRET_ACCESS_KEY=test-secret-key
+      - AWS_S3_BUCKET=test-bucket
+      - AWS_ENDPOINT=http://s3-mock:9000
+      - TEST_API_URL=http://localhost:3001
+      - TEST_ADMIN_URL=http://localhost:3000
+    volumes:
+      - .:/app
+    command: >
+      sh -c "npm run test:e2e"
+
+volumes:
+  mysql-test-data:
+  minio-test-data:
