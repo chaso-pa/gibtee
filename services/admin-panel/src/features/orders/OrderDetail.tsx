@@ -41,6 +41,13 @@ import {
 	AlertIcon,
 	AlertTitle,
 	AlertDescription,
+	Switch,
+	Tooltip,
+	Tabs,
+	TabList,
+	Tab,
+	TabPanels,
+	TabPanel,
 } from "@chakra-ui/react";
 import {
 	ArrowBackIcon,
@@ -49,10 +56,14 @@ import {
 	WarningIcon,
 	StarIcon,
 	ExternalLinkIcon,
+	BellIcon,
+	InfoIcon,
+	RepeatIcon,
+	TimeIcon,
 } from "@chakra-ui/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
-import type { Order, OrderStatus, Payment } from "../../types";
+import type { Order, OrderStatus, Payment, Notification } from "../../types";
 import { OrderStatusBadge } from "../../components/common/OrderStatusBadge";
 import { formatDate, timeAgo } from "../../utils/date";
 import {
@@ -62,7 +73,7 @@ import {
 	formatTrackingNumber,
 } from "../../utils/format";
 
-// 注文詳細を取得するAPI関数
+// 注文詳細を取得する関数
 const fetchOrderDetail = async (orderId: string) => {
 	const { data } = await api.get<{ order: Order }>(`/api/orders/${orderId}`);
 	return data.order;
@@ -73,35 +84,53 @@ const updateOrderStatus = async ({
 	orderId,
 	status,
 	adminMemo,
-}: { orderId: string; status: OrderStatus; adminMemo?: string }) => {
+	notifyCustomer,
+}: {
+	orderId: string;
+	status: OrderStatus;
+	adminMemo?: string;
+	notifyCustomer: boolean;
+}) => {
 	const { data } = await api.patch(`/api/orders/${orderId}/status`, {
 		status,
 		adminMemo,
+		notifyCustomer,
 	});
 	return data;
 };
 
-// 発送情報更新API関数
+// 配送情報更新API関数
 const updateShippingInfo = async ({
 	orderId,
 	shippingCarrier,
 	trackingNumber,
 	shippedAt,
 	estimatedDeliveryAt,
+	notifyCustomer,
 }: {
 	orderId: string;
 	shippingCarrier: string;
 	trackingNumber: string;
 	shippedAt: string;
 	estimatedDeliveryAt?: string;
+	notifyCustomer: boolean;
 }) => {
 	const { data } = await api.patch(`/api/orders/${orderId}/shipping`, {
 		shippingCarrier,
 		trackingNumber,
 		shippedAt,
 		estimatedDeliveryAt,
+		notifyCustomer,
 	});
 	return data;
+};
+
+// 通知履歴取得API関数
+const fetchOrderNotifications = async (orderId: string) => {
+	const { data } = await api.get<{ notifications: Notification[] }>(
+		`/api/orders/${orderId}/notifications`,
+	);
+	return data.notifications;
 };
 
 const useImageSignedUrl = (imageId: number | undefined) => {
@@ -138,7 +167,7 @@ export const OrderDetail: React.FC = () => {
 	const toast = useToast();
 	const queryClient = useQueryClient();
 
-	// モーダル開閉用の状態
+	// モーダル操作用の状態
 	const {
 		isOpen: isStatusModalOpen,
 		onOpen: onStatusModalOpen,
@@ -155,6 +184,7 @@ export const OrderDetail: React.FC = () => {
 	const [statusForm, setStatusForm] = useState({
 		status: "",
 		adminMemo: "",
+		notifyCustomer: true,
 	});
 
 	const [shippingForm, setShippingForm] = useState({
@@ -162,6 +192,7 @@ export const OrderDetail: React.FC = () => {
 		trackingNumber: "",
 		shippedAt: "",
 		estimatedDeliveryAt: "",
+		notifyCustomer: true,
 	});
 
 	// 注文詳細データを取得
@@ -176,6 +207,17 @@ export const OrderDetail: React.FC = () => {
 		enabled: !!orderId,
 	});
 
+	// 通知履歴データを取得
+	const {
+		data: notifications,
+		isLoading: isLoadingNotifications,
+		refetch: refetchNotifications,
+	} = useQuery({
+		queryKey: ["orderNotifications", orderId],
+		queryFn: () => fetchOrderNotifications(orderId || ""),
+		enabled: !!orderId,
+	});
+
 	// ステータス更新ミューテーション
 	const updateStatusMutation = useMutation({
 		mutationFn: updateOrderStatus,
@@ -187,6 +229,9 @@ export const OrderDetail: React.FC = () => {
 				isClosable: true,
 			});
 			queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+			queryClient.invalidateQueries({
+				queryKey: ["orderNotifications", orderId],
+			});
 			onStatusModalClose();
 		},
 		onError: (error: any) => {
@@ -200,22 +245,25 @@ export const OrderDetail: React.FC = () => {
 		},
 	});
 
-	// 発送情報更新ミューテーション
+	// 配送情報更新ミューテーション
 	const updateShippingMutation = useMutation({
 		mutationFn: updateShippingInfo,
 		onSuccess: () => {
 			toast({
-				title: "発送情報を更新しました",
+				title: "配送情報を更新しました",
 				status: "success",
 				duration: 3000,
 				isClosable: true,
 			});
 			queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+			queryClient.invalidateQueries({
+				queryKey: ["orderNotifications", orderId],
+			});
 			onShippingModalClose();
 		},
 		onError: (error: any) => {
 			toast({
-				title: "発送情報の更新に失敗しました",
+				title: "配送情報の更新に失敗しました",
 				description: error.response?.data?.message || "エラーが発生しました",
 				status: "error",
 				duration: 5000,
@@ -224,18 +272,19 @@ export const OrderDetail: React.FC = () => {
 		},
 	});
 
-	// ステータス変更モーダルを開く
+	// ステータス更新モーダルを開く
 	const handleOpenStatusModal = () => {
 		if (order) {
 			setStatusForm({
 				status: order.status,
 				adminMemo: order.adminMemo || "",
+				notifyCustomer: true,
 			});
 			onStatusModalOpen();
 		}
 	};
 
-	// 発送情報モーダルを開く
+	// 配送情報モーダルを開く
 	const handleOpenShippingModal = () => {
 		if (order) {
 			setShippingForm({
@@ -247,6 +296,7 @@ export const OrderDetail: React.FC = () => {
 				estimatedDeliveryAt: order.estimatedDeliveryAt
 					? new Date(order.estimatedDeliveryAt).toISOString().split("T")[0]
 					: "",
+				notifyCustomer: true,
 			});
 			onShippingModalOpen();
 		}
@@ -260,11 +310,12 @@ export const OrderDetail: React.FC = () => {
 				orderId,
 				status: statusForm.status as OrderStatus,
 				adminMemo: statusForm.adminMemo,
+				notifyCustomer: statusForm.notifyCustomer,
 			});
 		}
 	};
 
-	// 発送情報更新を実行
+	// 配送情報更新を実行
 	const handleUpdateShipping = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (orderId) {
@@ -319,7 +370,7 @@ export const OrderDetail: React.FC = () => {
 				<HStack>
 					{order.isHighPriority && (
 						<Badge colorScheme="red" p={2} borderRadius="md">
-							<StarIcon mr={1} /> 優先対応
+							<StarIcon mr={1} /> 優先出荷
 						</Badge>
 					)}
 					{order.hasPrintingIssue && (
@@ -330,7 +381,7 @@ export const OrderDetail: React.FC = () => {
 				</HStack>
 			</Flex>
 
-			{/* メインコンテンツ */}
+			{/* メインコンテント */}
 			<SimpleGrid columns={{ base: 1, lg: 2 }} spacing={5}>
 				{/* 左カラム */}
 				<Box>
@@ -386,7 +437,7 @@ export const OrderDetail: React.FC = () => {
 								</Box>
 								<Box>
 									<Text fontWeight="bold" fontSize="sm">
-										合計金額
+										支払金額
 									</Text>
 									<Text>{formatPrice(Number(order.price))}</Text>
 								</Box>
@@ -466,10 +517,10 @@ export const OrderDetail: React.FC = () => {
 						</CardBody>
 					</Card>
 
-					{/* 発送情報 */}
+					{/* 配送情報 */}
 					<Card mb={5}>
 						<CardHeader>
-							<Heading size="md">発送情報</Heading>
+							<Heading size="md">配送情報</Heading>
 						</CardHeader>
 						<CardBody>
 							<SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
@@ -529,6 +580,21 @@ export const OrderDetail: React.FC = () => {
 											: "未設定"}
 									</Text>
 								</Box>
+								<Box>
+									<Text fontWeight="bold" fontSize="sm">
+										顧客通知状況
+									</Text>
+									<HStack>
+										<Badge
+											colorScheme={order.notifiedShipping ? "green" : "gray"}
+										>
+											{order.notifiedShipping ? "発送通知済み" : "未通知"}
+										</Badge>
+										<Tooltip label="配送情報をLINEに通知済みかどうかを示します">
+											<InfoIcon color="gray.500" />
+										</Tooltip>
+									</HStack>
+								</Box>
 							</SimpleGrid>
 
 							<Button
@@ -538,7 +604,7 @@ export const OrderDetail: React.FC = () => {
 								size="sm"
 								onClick={handleOpenShippingModal}
 							>
-								発送情報更新
+								配送情報更新
 							</Button>
 						</CardBody>
 					</Card>
@@ -546,7 +612,7 @@ export const OrderDetail: React.FC = () => {
 
 				{/* 右カラム */}
 				<Box>
-					{/* 画像情報 */}
+					{/* 商品画像 */}
 					<Card mb={5}>
 						<CardHeader>
 							<Heading size="md">商品画像</Heading>
@@ -555,7 +621,7 @@ export const OrderDetail: React.FC = () => {
 							{order.image ? (
 								<ProductImage
 									imageId={order.image.id}
-									altText="ジブリ風加工画像"
+									altText="ジブリ加工生成画像"
 								/>
 							) : (
 								<Box
@@ -633,39 +699,156 @@ export const OrderDetail: React.FC = () => {
 						</CardBody>
 					</Card>
 
-					{/* 注文履歴 */}
+					{/* タブパネル（通知履歴と注文履歴） */}
 					<Card>
 						<CardHeader>
-							<Heading size="md">注文履歴</Heading>
+							<Heading size="md">履歴情報</Heading>
 						</CardHeader>
 						<CardBody>
-							{order.orderHistories && order.orderHistories.length > 0 ? (
-								<VStack align="stretch" spacing={3}>
-									{order.orderHistories.map((history) => (
-										<Box
-											key={history.id}
-											p={3}
-											borderRadius="md"
-											bg="gray.50"
-											borderLeft="4px solid"
-											borderLeftColor="blue.400"
-										>
-											<Flex justifyContent="space-between" mb={1}>
-												<Badge colorScheme="blue">{history.status}</Badge>
-												<Text fontSize="xs" color="gray.500">
-													{timeAgo(new Date(history.createdAt))}
-												</Text>
+							<Tabs variant="enclosed" colorScheme="blue">
+								<TabList>
+									<Tab>注文履歴</Tab>
+									<Tab>
+										通知履歴
+										{notifications && notifications.length > 0 && (
+											<Badge ml={2} colorScheme="blue" borderRadius="full">
+												{notifications.length}
+											</Badge>
+										)}
+									</Tab>
+								</TabList>
+								<TabPanels>
+									{/* 注文履歴タブ */}
+									<TabPanel p={3}>
+										{order.orderHistories && order.orderHistories.length > 0 ? (
+											<VStack align="stretch" spacing={3}>
+												{order.orderHistories.map((history) => (
+													<Box
+														key={history.id}
+														p={3}
+														borderRadius="md"
+														bg="gray.50"
+														borderLeft="4px solid"
+														borderLeftColor="blue.400"
+													>
+														<Flex justifyContent="space-between" mb={1}>
+															<Badge colorScheme="blue">{history.status}</Badge>
+															<Text fontSize="xs" color="gray.500">
+																{timeAgo(new Date(history.createdAt))}
+															</Text>
+														</Flex>
+														<Text>{history.message}</Text>
+														<Text fontSize="xs" mt={1} color="gray.600">
+															更新者: {history.createdBy}
+														</Text>
+													</Box>
+												))}
+											</VStack>
+										) : (
+											<Text color="gray.500">履歴がありません</Text>
+										)}
+									</TabPanel>
+
+									{/* 通知履歴タブ */}
+									<TabPanel p={3}>
+										{isLoadingNotifications ? (
+											<Flex justify="center" align="center" py={4}>
+												<Spinner size="md" />
 											</Flex>
-											<Text>{history.message}</Text>
-											<Text fontSize="xs" mt={1} color="gray.600">
-												更新者: {history.createdBy}
-											</Text>
-										</Box>
-									))}
-								</VStack>
-							) : (
-								<Text color="gray.500">履歴がありません</Text>
-							)}
+										) : notifications && notifications.length > 0 ? (
+											<VStack align="stretch" spacing={3}>
+												{notifications.map((notification) => {
+													// 通知内容をパース
+													let content = {};
+													try {
+														content = JSON.parse(notification.content);
+													} catch (e) {
+														console.error("通知内容のパースに失敗:", e);
+													}
+
+													return (
+														<Box
+															key={notification.id}
+															p={3}
+															borderRadius="md"
+															bg="gray.50"
+															borderLeft="4px solid"
+															borderLeftColor={
+																notification.success ? "green.400" : "red.400"
+															}
+														>
+															<Flex justifyContent="space-between" mb={1}>
+																<HStack>
+																	<Badge
+																		colorScheme={
+																			notification.type === "STATUS_UPDATE"
+																				? "blue"
+																				: "teal"
+																		}
+																	>
+																		{notification.type === "STATUS_UPDATE" ? (
+																			<>
+																				<RepeatIcon mr={1} /> ステータス通知
+																			</>
+																		) : notification.type ===
+																			"SHIPPING_UPDATE" ? (
+																			<>
+																				<BellIcon mr={1} /> 発送通知
+																			</>
+																		) : (
+																			notification.type
+																		)}
+																	</Badge>
+																	<Badge
+																		colorScheme={
+																			notification.success ? "green" : "red"
+																		}
+																	>
+																		{notification.success
+																			? "送信成功"
+																			: "送信失敗"}
+																	</Badge>
+																</HStack>
+																<Text fontSize="xs" color="gray.500">
+																	<TimeIcon mr={1} />
+																	{formatDate(new Date(notification.sentAt))}
+																</Text>
+															</Flex>
+
+															{content && (content as any).message && (
+																<Text mt={2}>{(content as any).message}</Text>
+															)}
+
+															{notification.errorMessage && (
+																<Alert status="error" size="sm" mt={2} p={2}>
+																	<AlertIcon />
+																	<Text fontSize="xs">
+																		{notification.errorMessage}
+																	</Text>
+																</Alert>
+															)}
+														</Box>
+													);
+												})}
+											</VStack>
+										) : (
+											<Box textAlign="center" py={4}>
+												<Text color="gray.500">通知履歴がありません</Text>
+												<Button
+													leftIcon={<RepeatIcon />}
+													colorScheme="blue"
+													variant="outline"
+													size="sm"
+													mt={3}
+													onClick={() => refetchNotifications()}
+												>
+													更新
+												</Button>
+											</Box>
+										)}
+									</TabPanel>
+								</TabPanels>
+							</Tabs>
 						</CardBody>
 					</Card>
 				</Box>
@@ -689,11 +872,11 @@ export const OrderDetail: React.FC = () => {
 									required
 								>
 									<option value="pending">処理待ち</option>
-									<option value="paid">支払済み</option>
+									<option value="paid">支払完了</option>
 									<option value="processing">処理中</option>
 									<option value="printing">印刷中</option>
-									<option value="shipped">発送済み</option>
-									<option value="delivered">配送完了</option>
+									<option value="shipped">発送完了</option>
+									<option value="delivered">配達完了</option>
 									<option value="cancelled">キャンセル</option>
 								</Select>
 							</FormControl>
@@ -708,6 +891,26 @@ export const OrderDetail: React.FC = () => {
 									placeholder="管理用のメモを入力してください"
 									rows={4}
 								/>
+							</FormControl>
+
+							<FormControl mt={4} display="flex" alignItems="center">
+								<FormLabel htmlFor="notify-customer" mb="0">
+									顧客に通知する
+								</FormLabel>
+								<Switch
+									id="notify-customer"
+									isChecked={statusForm.notifyCustomer}
+									onChange={(e) =>
+										setStatusForm({
+											...statusForm,
+											notifyCustomer: e.target.checked,
+										})
+									}
+									colorScheme="blue"
+								/>
+								<Tooltip label="LINEで顧客にステータス変更を通知します" ml={2}>
+									<InfoIcon color="gray.500" />
+								</Tooltip>
 							</FormControl>
 						</ModalBody>
 						<ModalFooter>
@@ -727,12 +930,12 @@ export const OrderDetail: React.FC = () => {
 				</ModalContent>
 			</Modal>
 
-			{/* 発送情報更新モーダル */}
+			{/* 配送情報更新モーダル */}
 			<Modal isOpen={isShippingModalOpen} onClose={onShippingModalClose}>
 				<ModalOverlay />
 				<ModalContent>
 					<form onSubmit={handleUpdateShipping}>
-						<ModalHeader>発送情報の更新</ModalHeader>
+						<ModalHeader>配送情報の更新</ModalHeader>
 						<ModalCloseButton />
 						<ModalBody>
 							<FormControl mb={4} isRequired>
@@ -796,6 +999,26 @@ export const OrderDetail: React.FC = () => {
 										})
 									}
 								/>
+							</FormControl>
+
+							<FormControl mt={4} display="flex" alignItems="center">
+								<FormLabel htmlFor="notify-shipping" mb="0">
+									顧客に配送情報を通知する
+								</FormLabel>
+								<Switch
+									id="notify-shipping"
+									isChecked={shippingForm.notifyCustomer}
+									onChange={(e) =>
+										setShippingForm({
+											...shippingForm,
+											notifyCustomer: e.target.checked,
+										})
+									}
+									colorScheme="teal"
+								/>
+								<Tooltip label="LINEで顧客に配送情報を通知します" ml={2}>
+									<InfoIcon color="gray.500" />
+								</Tooltip>
 							</FormControl>
 						</ModalBody>
 						<ModalFooter>

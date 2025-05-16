@@ -6,6 +6,7 @@ import { Login } from "../features/auth/Login";
 import { Dashboard } from "../features/dashboard/Dashboard";
 import { OrderList } from "../features/orders/OrderList";
 import { OrderDetail } from "../features/orders/OrderDetail";
+import NotificationLogs from "../features/notifications/NotificationLogs";
 
 export const AppRoutes = () => {
 	return (
@@ -17,6 +18,7 @@ export const AppRoutes = () => {
 					<Route path="/dashboard" element={<Dashboard />} />
 					<Route path="/orders" element={<OrderList />} />
 					<Route path="/orders/:orderId" element={<OrderDetail />} />
+					<Route path="/notifications" element={<NotificationLogs />} />
 					<Route path="/inventory" element={<div>在庫管理ページ</div>} />
 					<Route path="/users" element={<div>ユーザー管理ページ</div>} />
 					<Route path="/reports" element={<div>レポートページ</div>} />

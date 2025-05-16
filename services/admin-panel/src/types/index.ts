@@ -110,6 +110,25 @@ export interface Inventory {
 	updatedAt: string;
 }
 
+export interface Notification {
+	id: number; // Unique identifier
+	orderId: number; // Associated order ID
+	order: Order; // Relation to the Order entity
+	type: NotificationType; // Type of notification
+	content: string; // Notification content in JSON format
+	sentAt: string; // Date and time the notification was sent
+	success: boolean; // Flag indicating if the notification was successfully sent
+	errorMessage?: string; // Error message in case of failure
+	createdAt: string; // Timestamp when the notification was created
+	updatedAt: string; // Timestamp when the notification was last updated
+}
+
+export type NotificationType =
+	| "STATUS_UPDATE"
+	| "SHIPPING_UPDATE"
+	| "ORDER_REMINDER"
+	| "PAYMENT_REMINDER";
+
 export interface PaginationParams {
 	page: number;
 	limit: number;
