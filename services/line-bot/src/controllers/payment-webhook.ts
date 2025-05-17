@@ -197,7 +197,7 @@ export const stripeCancel = async (
 			// キャンセルメッセージをLINEに送信
 			await sendTextMessage(
 				user.lineUserId,
-				"決済がキャンセルされました。別の支払い方法を選択するか、文章をやり直してください。",
+				"決済がキャンセルされました。別の支払い方法を選択するか、注文をやり直してください。",
 			);
 		}
 
