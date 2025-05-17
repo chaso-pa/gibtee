@@ -32,7 +32,7 @@ export const stripeWebhook = async (
 		const event = await handleStripeWebhook(signature, req.body);
 
 		if (!event) {
-			res.status(400).send("Webhook処理に失敗しました");
+			res.status(500).send("Webhook処理中にサーバーエラーが発生しました");
 			return;
 		}
 
