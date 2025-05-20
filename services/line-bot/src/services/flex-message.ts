@@ -1173,16 +1173,6 @@ export const createPaymentMethodSelectionFlex = (
 							type: "button",
 							action: {
 								type: "message",
-								label: "LINE Pay",
-								text: "LINE Payで支払う",
-							},
-							style: "primary",
-							color: "#00C300",
-						},
-						{
-							type: "button",
-							action: {
-								type: "message",
 								label: "クレジットカード",
 								text: "クレジットカードで支払う",
 							},
