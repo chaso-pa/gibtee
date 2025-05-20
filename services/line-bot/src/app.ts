@@ -1,16 +1,14 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
 import helmet from "helmet";
 import { config } from "./config/index.js";
 import { logger } from "./utils/logger.js";
 import { prisma } from "./lib/prisma.js";
 import routes from "./routes/index.js";
 import apiRoutes from "./routes/api.js";
-import {
-	stripeWebhook,
-	stripeSuccess,
-	stripeCancel,
-} from "./controllers/payment-webhook.js";
+import stripeRoutes from "./routes/stripe.js";
+import { stripeWebhook } from "./controllers/payment-webhook.js";
 import authRoutes from "./routes/auth.js";
 import { notifyError } from "./services/slack-notification.js";
 
@@ -38,12 +36,17 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true }));
 
+// ビューエンジンの設定
+app.set("views", path.join(import.meta.dirname, "views"));
+app.set("view engine", "ejs");
+
 // ルーティング
 app.use("/", routes);
 
 // API ルート（管理画面向け）
 app.use("/auth", authRoutes);
 app.use("/api", apiRoutes);
+app.use("/callback", stripeRoutes);
 
 // エラーハンドリング
 app.use(
@@ -73,14 +76,10 @@ app.use(
 
 // Stripe Webhook（署名検証のため、rawBodyを保持する必要がある）
 app.post(
-	"/webhook/stripe",
+	"/stripe/webhook",
 	express.raw({ type: "application/json" }),
 	stripeWebhook,
 );
-
-// Stripeコールバック
-app.get("/stripe/success", stripeSuccess);
-app.get("/stripe/cancel", stripeCancel);
 
 // サーバー起動
 const PORT = config.port || 3000;

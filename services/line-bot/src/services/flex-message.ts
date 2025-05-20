@@ -1387,22 +1387,6 @@ export const createPaymentCompletedFlex = (
 			],
 			paddingAll: "12px",
 		},
-		footer: {
-			type: "box",
-			layout: "vertical",
-			contents: [
-				{
-					type: "button",
-					action: {
-						type: "message",
-						label: "OK",
-						text: "支払い完了を確認",
-					},
-					style: "primary",
-				},
-			],
-			paddingAll: "12px",
-		},
 	};
 
 	return {

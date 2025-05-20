@@ -29,7 +29,7 @@ export const stripeWebhook = async (
 		}
 
 		// Stripeからのwebhookイベントを処理
-		const event = await handleStripeWebhook(signature, req.body);
+		const event = await handleStripeWebhook(signature, req.rawBody);
 
 		if (!event) {
 			res.status(500).send("Webhook処理中にサーバーエラーが発生しました");
@@ -95,8 +95,11 @@ export const stripeWebhook = async (
 					const completedFlex = createPaymentCompletedFlex(
 						payment.order.orderNumber || "",
 					);
-					await lineClient.pushMessage(payment.order.user.lineUserId, completedFlex);
-					
+					await lineClient.pushMessage(
+						payment.order.user.lineUserId,
+						completedFlex,
+					);
+
 					// 通知履歴を記録
 					await prisma.notification.create({
 						data: {
@@ -112,10 +115,79 @@ export const stripeWebhook = async (
 					});
 				}
 
-				logger.info(`決済完了: orderId=${payment.orderId}, session=${transactionId}`);
+				logger.info(
+					`決済完了: orderId=${payment.orderId}, session=${transactionId}`,
+				);
 			}
 
 			res.status(200).send("Success");
+			// checkout.session.expiredイベントを処理
+		} else if (event.type === "checkout.session.expired") {
+			const session = event.data.object;
+			const transactionId = session.id;
+			const paymentStatus = session.payment_status;
+
+			// 対応する支払い情報を取得
+			const payment = await prisma.payment.findFirst({
+				where: { transactionId },
+				include: {
+					order: {
+						include: {
+							user: true,
+						},
+					},
+				},
+			});
+
+			if (!payment) {
+				logger.error(`支払い情報が見つかりません: ${transactionId}`);
+				res.status(404).send("支払い情報が見つかりません");
+				return;
+			}
+
+			if (paymentStatus === "unpaid" && payment.status !== "COMPLETED") {
+				// 支払いステータスを更新
+				await prisma.payment.update({
+					where: { id: payment.id },
+					data: { status: "unpaid" },
+				});
+
+				// 注文ステータスも更新
+				await prisma.order.update({
+					where: { id: payment.orderId },
+					data: { status: "cancelled" },
+				});
+
+				// ステータス更新の履歴を記録
+				await prisma.orderHistory.create({
+					data: {
+						orderId: payment.orderId,
+						status: "paid",
+						message: "Stripe決済が完了しました",
+						createdBy: "system",
+					},
+				});
+
+				// ステータス更新の履歴を記録
+				await prisma.orderHistory.create({
+					data: {
+						orderId: payment.orderId,
+						status: "paid",
+						message: "Stripe決済が失敗しました",
+						createdBy: "system",
+					},
+				});
+
+				// LINEに決済失敗通知を送信
+				if (payment.order.user && payment.order.user.lineUserId) {
+					// TODO: 決済失敗用のflexをつくる
+				}
+
+				logger.info(
+					`決済失敗: orderId=${payment.orderId}, session=${transactionId}`,
+				);
+				res.status(200).send("Expired");
+			}
 		} else {
 			// その他のWebhookイベントは現時点では処理しない
 			res.status(200).send("Event received");
@@ -147,17 +219,6 @@ export const stripeSuccess = async (
 		const sessionStatus = await checkStripeSessionStatus(sessionId);
 
 		if (sessionStatus.status === "COMPLETED") {
-			// ユーザーを取得
-			const user = await getUserByOrderId(orderId);
-
-			if (user && user.lineUserId) {
-				// 決済完了のメッセージをLINEに送信
-				const completedFlex = createPaymentCompletedFlex(
-					sessionStatus.orderNumber || "",
-				);
-				await lineClient.pushMessage(user.lineUserId, completedFlex);
-			}
-
 			// 成功ページにリダイレクト
 			res.render("payment-success", {
 				orderNumber: sessionStatus.orderNumber || "",

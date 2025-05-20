@@ -6,73 +6,70 @@
   <title>決済完了 - gibtee</title>
   <style>
     body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
       min-height: 100vh;
       margin: 0;
-      background-color: #f5f5f5;
+      background-color: #f8f9fa;
+      color: #333;
+      padding: 20px;
+      text-align: center;
     }
     .container {
+      max-width: 90%;
+      width: 500px;
       background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
       padding: 30px;
-      text-align: center;
-      max-width: 400px;
-      width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     .success-icon {
       color: #27AE60;
-      font-size: 48px;
+      font-size: 60px;
       margin-bottom: 20px;
     }
     h1 {
-      color: #333;
-      font-size: 24px;
-      margin-bottom: 16px;
+      margin-bottom: 15px;
+      color: #27AE60;
     }
     p {
-      color: #666;
-      line-height: 1.6;
       margin-bottom: 20px;
+      line-height: 1.6;
     }
     .order-number {
-      background: #f8f8f8;
-      padding: 10px 15px;
-      border-radius: 5px;
       font-weight: bold;
-      color: #333;
+      background: #f1f1f1;
+      padding: 8px 15px;
+      border-radius: 4px;
+      margin: 15px 0;
       display: inline-block;
-      margin: 10px 0;
     }
     .close-button {
-      background: #27AE60;
+      background-color: #27AE60;
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      font-weight: bold;
+      padding: 12px 25px;
+      border-radius: 5px;
       cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.3s;
+      font-size: 16px;
+      margin-top: 20px;
+      transition: background-color 0.3s;
     }
     .close-button:hover {
-      background: #219653;
+      background-color: #219653;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="success-icon">✓</div>
-    <h1>お支払いが完了しました</h1>
-    <p>ご注文いただきありがとうございます。お支払いの処理が完了しました。</p>
-    <div class="order-number">
-      注文番号: <%= orderNumber %>
-    </div>
-    <p>配送状況はLINEでお知らせします。</p>
-    <button class="close-button" onclick="window.close()">閉じる</button>
+    <div class="success-icon">✅</div>
+    <h1>決済が完了しました</h1>
+    <p>ご注文ありがとうございます！決済処理が正常に完了しました。</p>
+    <div class="order-number">注文番号：<%= orderNumber %></div>
+    <p>LINEアプリに戻り、注文ステータスをご確認ください。</p>
   </div>
 </body>
 </html>

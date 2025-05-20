@@ -12,7 +12,9 @@ const LINE_PAY_CHANNEL_SECRET = process.env.LINE_PAY_CHANNEL_SECRET || "";
 const LINE_PAY_API_URL =
 	process.env.LINE_PAY_API_URL || "https://sandbox-api-pay.line.me";
 const CALLBACK_URL =
-	process.env.PAYMENT_CALLBACK_URL || "https://example.com/callback";
+	process.env.PAYMENT_CALLBACK_URL ||
+	"https://0ad0-125-197-4-55.ngrok-free.app/callback";
+
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -94,6 +96,15 @@ export const createLinePayRequest = async (
 		);
 		const responseData = response.data;
 
+		// Orderの確認とuserIdとの紐づけ
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+		});
+
+		if (!order) {
+			throw new Error("注文が見つかりません");
+		}
+
 		if (responseData.returnCode === "0000") {
 			// 成功時はトランザクション情報をDBに保存
 			await prisma.payment.create({
@@ -103,6 +114,7 @@ export const createLinePayRequest = async (
 					transactionId: responseData.info.transactionId,
 					amount,
 					status: "PENDING",
+					userId: order.userId,
 				},
 			});
 
@@ -252,6 +264,15 @@ export const createStripeCheckoutSession = async (
 			},
 		});
 
+		// Orderの確認とuserIdとの紐づけ
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+		});
+
+		if (!order) {
+			throw new Error("注文が見つかりません");
+		}
+
 		// 支払い情報をDBに保存
 		await prisma.payment.create({
 			data: {
@@ -263,6 +284,7 @@ export const createStripeCheckoutSession = async (
 				metadata: {
 					stripeSessionId: session.id,
 				},
+				userId: order.userId,
 			},
 		});
 
@@ -375,13 +397,14 @@ export const handleStripeWebhook = async (
 		}
 
 		// bodyがバッファの場合は文字列に変換
-		const bodyStr = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8');
-		
+		const bodyStr =
+			typeof rawBody === "string" ? rawBody : rawBody.toString("utf8");
+
 		// イベントを構築
 		const event = stripe.webhooks.constructEvent(
 			bodyStr,
 			signature,
-			STRIPE_WEBHOOK_SECRET
+			STRIPE_WEBHOOK_SECRET,
 		);
 
 		logger.info(`Stripe Webhook: イベントタイプ=${event.type}`);
