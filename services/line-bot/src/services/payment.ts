@@ -12,9 +12,12 @@ const LINE_PAY_CHANNEL_SECRET = process.env.LINE_PAY_CHANNEL_SECRET || "";
 const LINE_PAY_API_URL =
 	process.env.LINE_PAY_API_URL || "https://sandbox-api-pay.line.me";
 const CALLBACK_URL =
-	process.env.PAYMENT_CALLBACK_URL || "https://example.com/callback";
+	process.env.PAYMENT_CALLBACK_URL ||
+	"https://0ad0-125-197-4-55.ngrok-free.app/callback";
+
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || "";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 // Stripeインスタンスの初期化
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -41,7 +44,7 @@ export const createLinePayRequest = async (
 			`LINE Pay決済リクエスト開始: 注文番号=${orderNumber}, 金額=${amount}`,
 		);
 
-		// リクエストデータの構築
+		// リクエストデータの作成
 		const requestId = uuidv4();
 		const payload = {
 			amount,
@@ -69,7 +72,7 @@ export const createLinePayRequest = async (
 			},
 		};
 
-		// ヘッダーの構築（HMACシグネチャを含む）
+		// ヘッダーの作成（HMACシグネチャを含む）
 		const nonce = uuidv4();
 		const requestUrl = "/v3/payments/request";
 		const requestBody = JSON.stringify(payload);
@@ -93,6 +96,15 @@ export const createLinePayRequest = async (
 		);
 		const responseData = response.data;
 
+		// Orderの確認とuserIdとの紐づけ
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+		});
+
+		if (!order) {
+			throw new Error("注文が見つかりません");
+		}
+
 		if (responseData.returnCode === "0000") {
 			// 成功時はトランザクション情報をDBに保存
 			await prisma.payment.create({
@@ -102,6 +114,7 @@ export const createLinePayRequest = async (
 					transactionId: responseData.info.transactionId,
 					amount,
 					status: "PENDING",
+					userId: order.userId,
 				},
 			});
 
@@ -135,13 +148,13 @@ export const confirmLinePayPayment = async (
 			`LINE Pay決済確定処理開始: transactionId=${transactionId}, 金額=${amount}`,
 		);
 
-		// リクエストデータの構築
+		// リクエストデータの作成
 		const payload = {
 			amount,
 			currency: "JPY",
 		};
 
-		// ヘッダーの構築（HMACシグネチャを含む）
+		// ヘッダーの作成（HMACシグネチャを含む）
 		const nonce = uuidv4();
 		const requestUrl = `/v3/payments/${transactionId}/confirm`;
 		const requestBody = JSON.stringify(payload);
@@ -251,6 +264,15 @@ export const createStripeCheckoutSession = async (
 			},
 		});
 
+		// Orderの確認とuserIdとの紐づけ
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+		});
+
+		if (!order) {
+			throw new Error("注文が見つかりません");
+		}
+
 		// 支払い情報をDBに保存
 		await prisma.payment.create({
 			data: {
@@ -262,6 +284,7 @@ export const createStripeCheckoutSession = async (
 				metadata: {
 					stripeSessionId: session.id,
 				},
+				userId: order.userId,
 			},
 		});
 
@@ -358,59 +381,37 @@ export const checkStripeSessionStatus = async (
 
 /**
  * Stripe Webhookイベントを処理する
+ * @param signature Stripe-Signatureヘッダー値
+ * @param rawBody リクエストボディ（文字列）
+ * @returns 処理されたイベント、またはundefinedを返す
  */
 export const handleStripeWebhook = async (
 	signature: string,
-	rawBody: string,
-): Promise<boolean> => {
+	rawBody: string | Buffer,
+): Promise<Stripe.Event | undefined> => {
 	try {
-		// Webhookの署名を検証
-		const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
-		const event = stripe.webhooks.constructEvent(
-			rawBody,
-			signature,
-			webhookSecret,
-		);
-
-		// イベントタイプに応じて処理
-		if (event.type === "checkout.session.completed") {
-			const session = event.data.object as Stripe.Checkout.Session;
-
-			// 支払い情報を更新
-			const payment = await prisma.payment.findFirst({
-				where: { transactionId: session.id },
-				include: {
-					order: true,
-				},
-			});
-
-			if (payment) {
-				await prisma.payment.update({
-					where: { id: payment.id },
-					data: { status: "COMPLETED" },
-				});
-
-				// 注文ステータスも更新
-				await prisma.order.update({
-					where: { id: payment.orderId },
-					data: { status: "paid" },
-				});
-
-				// Slack通知を送信
-				await notifyPaymentComplete(
-					payment.order.orderNumber,
-					PaymentMethod.CREDIT_CARD,
-					payment.amount,
-				);
-
-				logger.info(`Webhook: 決済完了処理成功 sessionId=${session.id}`);
-			}
+		// Webhookイベントを検証し構築
+		if (!STRIPE_WEBHOOK_SECRET) {
+			logger.warn("Stripe Webhook Secretが設定されていません");
+			return undefined;
 		}
 
-		return true;
+		// bodyがバッファの場合は文字列に変換
+		const bodyStr =
+			typeof rawBody === "string" ? rawBody : rawBody.toString("utf8");
+
+		// イベントを構築
+		const event = stripe.webhooks.constructEvent(
+			bodyStr,
+			signature,
+			STRIPE_WEBHOOK_SECRET,
+		);
+
+		logger.info(`Stripe Webhook: イベントタイプ=${event.type}`);
+		return event;
 	} catch (error: any) {
 		logger.error(`Webhook処理エラー: ${error.message}`);
-		return false;
+		return undefined;
 	}
 };
 

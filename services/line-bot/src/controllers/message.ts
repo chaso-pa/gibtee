@@ -956,19 +956,6 @@ const handlePaymentMethodSelection = async (
 					ConversationState.PAYMENT_PROCESSING,
 					context,
 				);
-
-				// MCPフェーズでは決済完了をシミュレート
-				setTimeout(async () => {
-					// 決済完了のFlexメッセージを送信
-					const completedFlex = createPaymentCompletedFlex(context.orderNumber);
-					await lineClient.pushMessage(userId, completedFlex);
-
-					await updateUserConversationState(
-						userId,
-						ConversationState.PAYMENT_COMPLETED,
-						context,
-					);
-				}, 5000);
 			} else {
 				await sendTextMessage(
 					userId,
@@ -1015,19 +1002,6 @@ const handlePaymentMethodSelection = async (
 					ConversationState.PAYMENT_PROCESSING,
 					context,
 				);
-
-				// MCPフェーズでは決済完了をシミュレート
-				setTimeout(async () => {
-					// 決済完了のFlexメッセージを送信
-					const completedFlex = createPaymentCompletedFlex(context.orderNumber);
-					await lineClient.pushMessage(userId, completedFlex);
-
-					await updateUserConversationState(
-						userId,
-						ConversationState.PAYMENT_COMPLETED,
-						context,
-					);
-				}, 10000);
 			} else {
 				await sendTextMessage(
 					userId,

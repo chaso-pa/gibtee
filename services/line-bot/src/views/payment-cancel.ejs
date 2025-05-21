@@ -6,61 +6,62 @@
   <title>決済キャンセル - gibtee</title>
   <style>
     body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
       min-height: 100vh;
       margin: 0;
-      background-color: #f5f5f5;
+      background-color: #f8f9fa;
+      color: #333;
+      padding: 20px;
+      text-align: center;
     }
     .container {
+      max-width: 90%;
+      width: 500px;
       background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
       padding: 30px;
-      text-align: center;
-      max-width: 400px;
-      width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-    .info-icon {
-      color: #3498DB;
-      font-size: 48px;
+    .cancel-icon {
+      color: #E74C3C;
+      font-size: 60px;
       margin-bottom: 20px;
     }
     h1 {
-      color: #333;
-      font-size: 24px;
-      margin-bottom: 16px;
+      margin-bottom: 15px;
+      color: #E74C3C;
     }
     p {
-      color: #666;
-      line-height: 1.6;
       margin-bottom: 20px;
+      line-height: 1.6;
     }
     .close-button {
-      background: #3498DB;
+      background-color: #3498DB;
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      font-weight: bold;
+      padding: 12px 25px;
+      border-radius: 5px;
       cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.3s;
+      font-size: 16px;
+      margin-top: 20px;
+      transition: background-color 0.3s;
     }
     .close-button:hover {
-      background: #2980B9;
+      background-color: #2980B9;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="info-icon">ⓘ</div>
+    <div class="cancel-icon">❌</div>
     <h1>決済がキャンセルされました</h1>
-    <p>お支払い処理がキャンセルされました。</p>
-    <p>LINEに戻って、別のお支払い方法を選択するか、注文をやり直してください。</p>
-    <button class="close-button" onclick="window.close()">閉じる</button>
+    <p>決済処理がキャンセルされました。</p>
+    <p>LINEアプリに戻り、別の支払い方法を選択するか、お問い合わせください。</p>
+    <button class="close-button" onclick="window.close()">ブラウザを閉じる</button>
   </div>
 </body>
 </html>
