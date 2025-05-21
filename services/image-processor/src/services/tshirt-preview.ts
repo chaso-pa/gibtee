@@ -53,7 +53,7 @@ export const generateTshirtPreview = async (
 				designWidth = Math.floor(templateWidth * 0.35);
 				break;
 			case "M":
-				designWidth = Math.floor(templateWidth * 0.4);
+				designWidth = Math.floor(templateWidth * 0.35);
 				break;
 			case "L":
 				designWidth = Math.floor(templateWidth * 0.45);
@@ -62,7 +62,7 @@ export const generateTshirtPreview = async (
 				designWidth = Math.floor(templateWidth * 0.5);
 				break;
 			default:
-				designWidth = Math.floor(templateWidth * 0.4); // デフォルトはM
+				designWidth = Math.floor(templateWidth * 0.35); // デフォルトはM
 		}
 
 		// デザイン画像をリサイズ
