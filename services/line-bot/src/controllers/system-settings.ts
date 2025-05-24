@@ -43,12 +43,15 @@ export const updateSystemSettings = async (
 	res: Response,
 ): Promise<void> => {
 	try {
-		const { isOrderAcceptanceEnabled, orderSuspensionMessage } = req.body;
+		const { isOrderAcceptanceEnabled, orderSuspensionMessage } = JSON.parse(
+			req.body.body,
+		);
 
+		console.log(isOrderAcceptanceEnabled);
 		// バリデーション
 		if (typeof isOrderAcceptanceEnabled !== "boolean") {
 			res.status(400).json({
-				error: "isOrderAcceptanceEnabledはboolean型である必要があります",
+				error: "isOrderAcceptanceEnabledはtrueかfalseである必要があります",
 			});
 			return;
 		}
