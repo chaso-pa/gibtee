@@ -1,5 +1,5 @@
 import { ImageEventMessage } from "@line/bot-sdk";
-import { lineClient } from "./line.js";
+import { lineClient } from "../config/line.js";
 import { logger } from "../utils/logger.js";
 import { prisma } from "../lib/prisma.js";
 import { uploadBufferToS3, getS3SignedUrl } from "../utils/s3.js";
@@ -8,10 +8,7 @@ import {
 	ConversationState,
 } from "./conversation.js";
 import { convertToGhibliStyle } from "./image-processor.js";
-import {
-	createImageConversionResultFlex,
-	createTshirtPreviewFlex,
-} from "./flex-message.js";
+import { createImageConversionResultFlex } from "./flex-message.js";
 
 /**
  * LINE画像メッセージを処理する
