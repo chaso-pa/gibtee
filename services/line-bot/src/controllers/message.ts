@@ -12,8 +12,12 @@ import {
 	ConversationState,
 } from "../services/conversation.js";
 import { handleImageMessage } from "../services/image.js";
-import { handleHelpCommand, handleFaqCommand } from "../services/commands.js";
-import { lineClient } from "../services/line.js";
+import {
+	handleHelpCommand,
+	handleFaqCommand,
+	handleOrderHistoryRequest,
+} from "../services/commands.js";
+import { lineClient } from "../config/line.js";
 import { generateTshirtPreview } from "@/services/image-processor.js";
 import { createOrder } from "../services/order.js";
 import {
@@ -21,17 +25,11 @@ import {
 	createAddressInputGuideFlex,
 	createOrderConfirmationFlex,
 	createPaymentMethodSelectionFlex,
-	createCreditCardInputFlex,
-	createPaymentCompletedFlex,
 	createTshirtPreviewFlex,
 	createColorSelectionFlex,
 	createCreditCardPaymentFlex,
 } from "../services/flex-message.js";
-import {
-	processPayment,
-	PaymentMethod,
-	getPaymentStatus,
-} from "../services/payment.js";
+import { processPayment, PaymentMethod } from "../services/payment.js";
 
 import { getS3SignedUrl } from "@/utils/s3.js";
 
@@ -103,10 +101,21 @@ const handleTextMessage = async (
 		return;
 	}
 
-	if (text.includes("質問") || text.includes("FAQ")) {
-		// FAQ処理
+	if (text.includes("Q&A")) {
 		await handleFaqCommand(userId);
 		await updateUserConversationState(userId, ConversationState.FAQ);
+		return;
+	}
+
+	if (text.includes("過去の注文を確認")) {
+		await handleOrderHistoryRequest(userId);
+		await updateUserConversationState(userId, ConversationState.FAQ);
+		return;
+	}
+
+	if (text.includes("新しい写真")) {
+		await sendTextMessage(userId, "新しい写真を送ってください！");
+		await updateUserConversationState(userId, ConversationState.WAITING);
 		return;
 	}
 

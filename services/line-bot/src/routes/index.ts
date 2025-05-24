@@ -1,7 +1,7 @@
 import express from "express";
 import { middleware } from "@line/bot-sdk";
-import { lineMiddlewareConfig } from "../config/line";
-import { handleWebhook } from "../controllers/webhook";
+import { lineMiddlewareConfig } from "../config/line.js";
+import { handleWebhook } from "../controllers/webhook.js";
 
 const router = express.Router();
 

@@ -11,19 +11,23 @@ dotenv.config();
  * リッチメニューをセットアップするメイン関数
  */
 const main = async () => {
-  try {
-    // リッチメニュー画像のパス
-    const imagePath = path.join(__dirname, "../assets/rich-menu.png");
-    
-    // リッチメニューをセットアップ
-    const richMenuId = await setupRichMenu(imagePath);
-    
-    logger.info(`リッチメニューのセットアップが完了しました。Rich Menu ID: ${richMenuId}`);
-    process.exit(0);
-  } catch (error: any) {
-    logger.error(`リッチメニューのセットアップに失敗しました: ${error.message}`);
-    process.exit(1);
-  }
+	try {
+		// リッチメニュー画像のパス
+		const imagePath = path.join(import.meta.dirname, "../assets/rich-menu.png");
+
+		// リッチメニューをセットアップ
+		const richMenuId = await setupRichMenu(imagePath);
+
+		logger.info(
+			`リッチメニューのセットアップが完了しました。Rich Menu ID: ${richMenuId}`,
+		);
+		process.exit(0);
+	} catch (error: any) {
+		logger.error(
+			`リッチメニューのセットアップに失敗しました: ${error.message}`,
+		);
+		process.exit(1);
+	}
 };
 
 // スクリプトを実行

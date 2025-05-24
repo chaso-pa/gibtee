@@ -1,5 +1,9 @@
 import { sendTextMessage } from "./line.js";
 import { logger } from "../utils/logger.js";
+import { getFAQs } from "./faq-service.js";
+import { prisma } from "@/lib/prisma.js";
+import { formatOrderStatus, getOrderHistory } from "./order-service.js";
+import { Order } from "@prisma/client";
 
 /**
  * ヘルプコマンドを処理する
@@ -24,25 +28,31 @@ export const handleHelpCommand = async (userId: string): Promise<void> => {
 };
 
 /**
- * FAQコマンドを処理する
+ * 「Q&A」リクエストの処理
  */
 export const handleFaqCommand = async (userId: string): Promise<void> => {
-	logger.info(`FAQコマンド処理: ${userId}`);
+	try {
+		logger.info(`FAQコマンド処理: ${userId}`);
 
-	const faqMessage =
-		"よくある質問:\n\n" +
-		"Q: 料金はいくらですか？\n" +
-		"A: Tシャツ1枚3,980円(税込)です。送料は全国一律500円です。\n\n" +
-		"Q: どのような支払い方法がありますか？\n" +
-		"A: クレジットカード、LINE Pay、コンビニ決済に対応しています。\n\n" +
-		"Q: 納期はどれくらいですか？\n" +
-		"A: ご注文から約2週間でお届けします。\n\n" +
-		"Q: どんな写真でも変換できますか？\n" +
-		"A: 基本的には人物や風景の写真が最適です。文字だけの画像や著作権のある画像はご遠慮ください。\n\n" +
-		"Q: 返品・交換はできますか？\n" +
-		"A: 商品の不良があった場合のみ、お届けから7日以内に対応いたします。";
+		// FAQリストを取得
+		const faqs = await getFAQs();
 
-	await sendTextMessage(userId, faqMessage);
+		// FAQメッセージを作成
+		let faqMessage = "【よくある質問】\n\n";
+
+		faqs.forEach((faq, index) => {
+			if (index !== 0) {
+				faqMessage += `\n\n`;
+			}
+			faqMessage += `${index + 1}. ${faq.question}\n`;
+			faqMessage += `${faq.answer}`;
+		});
+
+		await sendTextMessage(userId, faqMessage);
+	} catch (error: any) {
+		logger.error(`FAQ取得エラー: ${error.message}`);
+		throw error;
+	}
 };
 
 /**
@@ -60,4 +70,51 @@ export const handleOrderStatusCommand = async (
 		"MCPフェーズのため、この機能はまだ実装されていません。";
 
 	await sendTextMessage(userId, statusMessage);
+};
+
+/**
+ * 「過去の注文を確認」リクエストの処理
+ */
+export const handleOrderHistoryRequest = async (
+	userId: string,
+): Promise<void> => {
+	try {
+		// ユーザーIDからLINEユーザーIDを取得
+		const user = await prisma.user.findUnique({
+			where: { lineUserId: userId },
+		});
+
+		if (!user) {
+			const message =
+				"注文履歴がありません。まずは「新しい画像」から注文を始めてみましょう！";
+			await sendTextMessage(userId, message);
+			return;
+		}
+
+		// 注文履歴を取得
+		const orders = await getOrderHistory(user.id);
+
+		if (orders.length === 0) {
+			const message =
+				"注文履歴がありません。まずは「新しい画像」から注文を始めてみましょう！";
+			await sendTextMessage(userId, message);
+			return;
+		}
+
+		// 注文履歴をフォーマットしてメッセージを作成
+		const orderItems = orders.map((order: Order, index: number) => {
+			const date = new Date(order.createdAt).toLocaleDateString("ja-JP");
+			return `${index + 1}. 注文番号: ${order.orderNumber}\n日付: ${date}\n状態: ${formatOrderStatus(order.status)}\n`;
+		});
+
+		const message = `【注文履歴】\n\n${orderItems.join("\n")}`;
+
+		// TODO: 詳細な注文確認
+		// const message = `【注文履歴】\n\n${orderItems.join("\n")}\n\n特定の注文について詳細を確認するには、「注文番号:○○○○」と送信してください。`;
+
+		await sendTextMessage(userId, message);
+	} catch (error: any) {
+		logger.error(`注文履歴取得エラー: ${error.message}`);
+		throw error;
+	}
 };

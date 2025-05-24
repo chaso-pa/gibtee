@@ -1,9 +1,6 @@
-import { Client, Message, TextMessage, ImageMessage } from "@line/bot-sdk";
-import { lineClientConfig } from "../config/line.js";
+import { Message, TextMessage } from "@line/bot-sdk";
+import { lineClient } from "../config/line.js";
 import { logger } from "../utils/logger.js";
-
-// LINE APIクライアント初期化
-export const lineClient = new Client(lineClientConfig);
 
 /**
  * テキストメッセージを送信する
