@@ -7,6 +7,7 @@ import { Dashboard } from "../features/dashboard/Dashboard";
 import { OrderList } from "../features/orders/OrderList";
 import { OrderDetail } from "../features/orders/OrderDetail";
 import NotificationLogs from "../features/notifications/NotificationLogs";
+import { Settings } from "../features/settings/Settings";
 
 export const AppRoutes = () => {
 	return (
@@ -22,7 +23,7 @@ export const AppRoutes = () => {
 					<Route path="/inventory" element={<div>在庫管理ページ</div>} />
 					<Route path="/users" element={<div>ユーザー管理ページ</div>} />
 					<Route path="/reports" element={<div>レポートページ</div>} />
-					<Route path="/settings" element={<div>設定ページ</div>} />
+					<Route path="/settings" element={<Settings />} />
 				</Route>
 			</Route>
 
