@@ -48,6 +48,7 @@ export const Settings: React.FC = () => {
 			const res = (await api.get(
 				"/api/admin/settings",
 			)) satisfies SystemSettings;
+			// @ts-ignore
 			const data = res.data satisfies SystemSettings;
 			setSettings(data);
 			setIsOrderAcceptanceEnabled(data.isOrderAcceptanceEnabled);
@@ -171,6 +172,7 @@ export const Settings: React.FC = () => {
 								<FormControl>
 									<FormLabel>受付停止時のメッセージ</FormLabel>
 									<Textarea
+										id="order-suspensino-message"
 										placeholder="現在サービスを一時停止しております。ご迷惑をおかけして申し訳ございません。"
 										value={orderSuspensionMessage}
 										onChange={(e) => setOrderSuspensionMessage(e.target.value)}

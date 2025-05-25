@@ -1,19 +1,19 @@
 import express from "express";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate } from "@/middleware/auth.js";
 import {
 	getOrders,
 	getOrderById,
 	updateOrderStatus,
 	updateOrderShipping,
 	getOrderNotifications,
-} from "../controllers/order.js";
+} from "@/controllers/order.js";
 import { getImageSignedUrl } from "@/controllers/image.js";
 import { getNotifications } from "@/controllers/notification.js";
 import {
 	getSystemSettings,
 	updateSystemSettings,
 	getOrderAcceptanceStatus,
-} from "../controllers/system-settings.js";
+} from "@/controllers/system-settings.js";
 
 const apiRouter = express.Router();
 

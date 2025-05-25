@@ -47,7 +47,6 @@ export const updateSystemSettings = async (
 			req.body.body,
 		);
 
-		console.log(isOrderAcceptanceEnabled);
 		// バリデーション
 		if (typeof isOrderAcceptanceEnabled !== "boolean") {
 			res.status(400).json({

@@ -32,7 +32,7 @@ export const checkOrderAcceptance = async (
 			}
 
 			// レスポンスを送信してここで処理を終了
-			res.status(200).json({
+			res.status(503).json({
 				success: false,
 				message: "Order acceptance is currently suspended",
 			});
