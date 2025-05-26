@@ -3,9 +3,10 @@ import { Request, Response, NextFunction } from "express";
 import { SystemSettingsService } from "../services/system-settings.js";
 import { sendTextMessage } from "../services/line.js";
 import { logger } from "../utils/logger.js";
+import { WebhookEvent } from "@line/bot-sdk";
 
 /**
- * 注文受付状態をチェックするミドルウェア
+ * 注文受付状態をチェックする
  */
 export const checkOrderAcceptance = async (
 	req: Request,
@@ -13,7 +14,13 @@ export const checkOrderAcceptance = async (
 	next: NextFunction,
 ): Promise<void> => {
 	try {
-		const { userId } = req.body;
+		if (!req.body) {
+			next();
+			return;
+		}
+		const events: WebhookEvent[] = req.body.events;
+		const { source } = events[0];
+		const userId = source.userId as string;
 
 		if (!userId) {
 			next();
