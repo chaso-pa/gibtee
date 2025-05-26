@@ -85,7 +85,7 @@ model Order {
   isCancelled        Boolean   @default(false)
   cancelledAt        DateTime? // キャンセル日時
   cancellationReason String? // キャンセル理由
-  isRefunded         Boolean   @default(false) // 返金済みか
+  isRefunded         Boolean   @default(false) // 返金済み
   refundedAt         DateTime? // 返金日時
 
   // 通知情報
@@ -97,7 +97,7 @@ model Order {
   printStatus String? // "waiting", "printing", "printed", "failed" など
   printedAt   DateTime? // 印刷完了日時
 
-  // 詳細金額情報（税金、送料など）
+  // 詳細金額情報（税額・送料など）
   basePrice      Int // 基本価格
   taxAmount      Int // 税額
   shippingFee    Int // 送料
@@ -135,7 +135,7 @@ model OrderHistory {
   order     Order    @relation(fields: [orderId], references: [id])
   status    String // 変更後のステータス
   message   String // 変更内容の説明
-  createdBy String // 変更者（システム  or 管理者のID/名前）
+  createdBy String // 変更者（システム or 管理者のID/名前）
   createdAt DateTime @default(now())
 
   @@index([orderId])
@@ -207,6 +207,17 @@ model Payment {
   @@index([orderId])
   @@index([transactionId])
   @@map("payments")
+}
+
+// システム設定モデル
+model SystemSettings {
+  id                       Int      @id @default(autoincrement())
+  isOrderAcceptanceEnabled Boolean  @default(true) // 注文受付有効フラグ
+  orderSuspensionMessage   String?  @db.Text // 受付停止時のメッセージ
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }
 
 // Tシャツカラーの定義
