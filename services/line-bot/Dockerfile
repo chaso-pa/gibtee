@@ -1,25 +1,21 @@
 # Multi-stage build for LINE Bot service
-FROM node:18-alpine AS base
-
+FROM node:22-alpine AS base
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
 # Copy package files for all workspaces
-COPY package*.json yarn.lock* ./
-COPY packages/ ./packages/
+COPY services/line-bot/yarn.lock* ./services/line-bot/
 COPY services/line-bot/package.json ./services/line-bot/
 
 # Install dependencies
-RUN yarn install --frozen-lockfile
+RUN yarn --cwd ./services/line-bot install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 
 # Copy node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/services/line-bot/node_modules ./services/line-bot/node_modules
 
 # Copy source code

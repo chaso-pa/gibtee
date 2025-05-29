@@ -1,25 +1,22 @@
 # Multi-stage build for Admin Panel (React + Vite)
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
 # Copy package files for all workspaces
-COPY package*.json yarn.lock* ./
-COPY packages/ ./packages/
+COPY services/admin-panel/yarn.lock* ./services/admin-panel/
 COPY services/admin-panel/package.json ./services/admin-panel/
 
 # Install dependencies
-RUN yarn install --frozen-lockfile
+RUN yarn --cwd ./services/admin-panel install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 
 # Copy node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/services/admin-panel/node_modules ./services/admin-panel/node_modules
 
 # Copy source code

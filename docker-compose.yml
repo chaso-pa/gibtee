@@ -35,28 +35,29 @@ services:
     environment:
       # Database
       DATABASE_URL: mysql://${MYSQL_USER:-gibtee}:${MYSQL_PASSWORD:-password}@mysql:3306/${MYSQL_DATABASE:-gibtee}
-      
+
       # LINE Configuration
       LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN}
       LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET}
-      
+
       # AWS Configuration
       AWS_REGION: ${AWS_REGION:-ap-southeast-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
-      
+
       # Payment Configuration
       LINE_PAY_CHANNEL_ID: ${LINE_PAY_CHANNEL_ID}
       LINE_PAY_CHANNEL_SECRET: ${LINE_PAY_CHANNEL_SECRET}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+
       # Slack Configuration
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
       SLACK_CHANNEL: ${SLACK_CHANNEL:-#gibtee-notifications}
       SLACK_USERNAME: ${SLACK_USERNAME:-gibtee-bot}
-      
+
       # Service URLs
       IMAGE_PROCESSOR_URL: http://image-processor:4000
     depends_on:
@@ -67,7 +68,7 @@ services:
     volumes:
       - line_bot_logs:/app/logs
 
-  # Image Processor Service  
+  # Image Processor Service
   image-processor:
     build:
       context: .
@@ -79,16 +80,16 @@ services:
     environment:
       # Database
       DATABASE_URL: mysql://${MYSQL_USER:-gibtee}:${MYSQL_PASSWORD:-password}@mysql:3306/${MYSQL_DATABASE:-gibtee}
-      
+
       # AWS Configuration
       AWS_REGION: ${AWS_REGION:-ap-southeast-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
-      
+
       # OpenAI Configuration
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      
+
       # Service URLs
       LINE_BOT_URL: http://line-bot:3000
     depends_on:

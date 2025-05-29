@@ -1,5 +1,5 @@
 # Multi-stage build for Image Processor service
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 # Install system dependencies for Sharp and image processing
 RUN apk add --no-cache \
@@ -15,20 +15,17 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy package files for all workspaces
-COPY package*.json yarn.lock* ./
-COPY packages/ ./packages/
+COPY services/image-processor/yarn.lock* ./services/image-processor/
 COPY services/image-processor/package.json ./services/image-processor/
 
 # Install dependencies
-RUN yarn install --frozen-lockfile
+RUN yarn --cwd ./services/image-processor install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 
 # Copy node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/services/image-processor/node_modules ./services/image-processor/node_modules
 
 # Copy source code
@@ -38,14 +35,11 @@ COPY packages/ ./packages/
 # Change to service directory
 WORKDIR /app/services/image-processor
 
-# Generate Prisma client (if using Prisma)
-RUN npx prisma generate || echo "No Prisma schema found, skipping generation"
-
 # Build the application
 RUN yarn build
 
 # Production image
-FROM node:18-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 # Install only runtime dependencies for Sharp
