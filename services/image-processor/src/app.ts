@@ -1,4 +1,5 @@
 import express from "express";
+// @ts-ignore
 import cors from "cors";
 import helmet from "helmet";
 import { config } from "./config/index.js";
@@ -24,9 +25,9 @@ app.use("/api", routes);
 app.use(
 	(
 		err: any,
-		req: express.Request,
+		_req: express.Request,
 		res: express.Response,
-		next: express.NextFunction,
+		_next: express.NextFunction,
 	) => {
 		logger.error(`Error: ${err.message}`);
 		res.status(err.status || 500).json({

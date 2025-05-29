@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { convertToGhibliStyle, withRetry } from "../services/openai.js";
-import { resizeImage, convertImageFormat } from "../utils/image.js";
+import { resizeImage } from "../utils/image.js";
 import {
 	uploadBufferToS3,
 	generateSignedUrl,

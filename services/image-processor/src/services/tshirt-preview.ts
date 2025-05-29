@@ -45,7 +45,7 @@ export const generateTshirtPreview = async (
 		const templateHeight = templateMetadata.height || 1000;
 
 		// デザイン画像をリサイズ（サイズに応じて調整）
-		let designWidth, designHeight;
+		let designWidth;
 
 		// サイズに応じてデザインサイズを調整
 		switch (size) {
@@ -77,7 +77,6 @@ export const generateTshirtPreview = async (
 		// リサイズ後のデザイン画像のメタデータを取得
 		const resizedDesignMetadata = await sharp(designResized).metadata();
 		designWidth = resizedDesignMetadata.width || designWidth;
-		designHeight = resizedDesignMetadata.height || designWidth;
 
 		// デザインの配置位置を計算（中央に配置）
 		const left = Math.floor((templateWidth - designWidth) / 2);

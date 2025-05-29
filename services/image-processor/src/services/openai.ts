@@ -68,6 +68,7 @@ export const convertToGhibliStyle = async (
 			console.log(response.data[0]);
 
 			const imageBase64 = response.data[0].b64_json;
+			// @ts-ignore
 			const imageBytes = Buffer.from(imageBase64, "base64");
 
 			// 処理時間をログ
