@@ -1,0 +1,94 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+dist
+dist-ssr
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Logs
+logs
+*.log
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*
+
+# Test files
+test
+tests
+__tests__
+**/*.test.js
+**/*.test.ts
+**/*.test.jsx
+**/*.test.tsx
+**/*.spec.js
+**/*.spec.ts
+**/*.spec.jsx
+**/*.spec.tsx
+
+# Storybook
+.storybook
+storybook-static
+
+# Documentation
+README.md
+docs
+*.md
+
+# Temporary files
+*.tmp
+*.temp
+
+# ESLint cache
+.eslintcache
+
+# Vite cache
+.vite
