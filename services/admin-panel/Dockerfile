@@ -6,25 +6,21 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy package files for all workspaces
-COPY services/admin-panel/yarn.lock* ./services/admin-panel/
-COPY services/admin-panel/package.json ./services/admin-panel/
+COPY ./yarn.lock* ./
+COPY ./package.json ./
 
 # Install dependencies
-RUN yarn --cwd ./services/admin-panel install --frozen-lockfile
+RUN yarn install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 
 # Copy node_modules from deps stage
-COPY --from=deps /app/services/admin-panel/node_modules ./services/admin-panel/node_modules
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code
-COPY services/admin-panel/ ./services/admin-panel/
-COPY packages/ ./packages/
-
-# Change to service directory
-WORKDIR /app/services/admin-panel
+COPY ./ ./
 
 # Build the application
 RUN yarn build
@@ -36,10 +32,10 @@ FROM nginx:alpine AS runner
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy custom nginx config
-COPY services/admin-panel/nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application
-COPY --from=builder /app/services/admin-panel/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Create non-root user for nginx
 RUN addgroup -g 1001 -S nodejs

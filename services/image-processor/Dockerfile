@@ -15,25 +15,21 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy package files for all workspaces
-COPY services/image-processor/yarn.lock* ./services/image-processor/
-COPY services/image-processor/package.json ./services/image-processor/
+COPY ./yarn.lock* ./
+COPY ./package.json ./
 
 # Install dependencies
-RUN yarn --cwd ./services/image-processor install --frozen-lockfile
+RUN yarn install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 
 # Copy node_modules from deps stage
-COPY --from=deps /app/services/image-processor/node_modules ./services/image-processor/node_modules
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code
-COPY services/image-processor/ ./services/image-processor/
-COPY packages/ ./packages/
-
-# Change to service directory
-WORKDIR /app/services/image-processor
+COPY ./ ./
 
 # Build the application
 RUN yarn build
@@ -52,16 +48,16 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 imageprocessor
 
 # Install runtime dependencies only
-COPY --from=builder /app/services/image-processor/package.json ./
-COPY --from=builder /app/services/image-processor/yarn.lock* ./
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/yarn.lock* ./
 
 # Install production dependencies only
 RUN yarn install --production --frozen-lockfile && yarn cache clean
 
 # Copy built application
-COPY --from=builder --chown=imageprocessor:nodejs /app/services/image-processor/dist ./dist
-COPY --from=builder --chown=imageprocessor:nodejs /app/services/image-processor/node_modules ./node_modules
-COPY --from=builder --chown=imageprocessor:nodejs /app/services/image-processor/assets ./assets
+COPY --from=builder --chown=imageprocessor:nodejs /app/dist ./dist
+COPY --from=builder --chown=imageprocessor:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=imageprocessor:nodejs /app/assets ./assets
 
 # Create uploads directory
 RUN mkdir -p /app/uploads && chown imageprocessor:nodejs /app/uploads

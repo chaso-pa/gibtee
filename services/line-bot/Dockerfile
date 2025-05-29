@@ -5,25 +5,21 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy package files for all workspaces
-COPY services/line-bot/yarn.lock* ./services/line-bot/
-COPY services/line-bot/package.json ./services/line-bot/
+COPY ./yarn.lock* ./
+COPY ./package.json ./
 
 # Install dependencies
-RUN yarn --cwd ./services/line-bot install --frozen-lockfile
+RUN yarn install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 
 # Copy node_modules from deps stage
-COPY --from=deps /app/services/line-bot/node_modules ./services/line-bot/node_modules
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code
-COPY services/line-bot/ ./services/line-bot/
-COPY packages/ ./packages/
-
-# Change to service directory
-WORKDIR /app/services/line-bot
+COPY ./ ./
 
 # Generate Prisma client
 RUN npx prisma generate
@@ -40,17 +36,17 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 linebot
 
 # Install runtime dependencies only
-COPY --from=builder /app/services/line-bot/package.json ./
-COPY --from=builder /app/services/line-bot/yarn.lock* ./
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/yarn.lock* ./
 
 # Install production dependencies only
 RUN yarn install --production --frozen-lockfile && yarn cache clean
 
 # Copy built application
-COPY --from=builder --chown=linebot:nodejs /app/services/line-bot/dist ./dist
-COPY --from=builder --chown=linebot:nodejs /app/services/line-bot/node_modules ./node_modules
-COPY --from=builder --chown=linebot:nodejs /app/services/line-bot/prisma ./prisma
-COPY --from=builder --chown=linebot:nodejs /app/services/line-bot/assets ./assets
+COPY --from=builder --chown=linebot:nodejs /app/dist ./dist
+COPY --from=builder --chown=linebot:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=linebot:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=linebot:nodejs /app/assets ./assets
 
 # Switch to non-root user
 USER linebot

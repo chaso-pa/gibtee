@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MySQL Database
   mysql:
@@ -26,8 +24,7 @@ services:
   # LINE Bot Service
   line-bot:
     build:
-      context: .
-      dockerfile: services/line-bot/Dockerfile
+      context: services/line-bot
     container_name: gibtee-line-bot
     restart: unless-stopped
     ports:
@@ -71,8 +68,7 @@ services:
   # Image Processor Service
   image-processor:
     build:
-      context: .
-      dockerfile: services/image-processor/Dockerfile
+      context: ./services/image-processor
     container_name: gibtee-image-processor
     restart: unless-stopped
     ports:
@@ -104,8 +100,7 @@ services:
   # Admin Panel Service
   admin-panel:
     build:
-      context: .
-      dockerfile: services/admin-panel/Dockerfile
+      context: ./services/admin-panel
     container_name: gibtee-admin-panel
     restart: unless-stopped
     ports:
