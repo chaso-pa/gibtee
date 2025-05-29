@@ -4,7 +4,8 @@ import { logger } from "../utils/logger.js";
 import {
 	notifyNewOrder,
 	notifyOrderStatusUpdate,
-} from "./slack-notification.ts";
+} from "./slack-notification.js";
+import { OrderStatus } from "@prisma/client";
 
 /**
  * 注文レコードを作成する
@@ -204,7 +205,7 @@ export const getUserOrders = async (userId: string): Promise<any[]> => {
  */
 export const updateOrderStatusWithHistory = async (
 	orderNumber: string,
-	newStatus: string,
+	newStatus: OrderStatus,
 	message: string,
 	updatedBy: string,
 ): Promise<void> => {

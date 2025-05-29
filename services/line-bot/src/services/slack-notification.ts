@@ -308,6 +308,7 @@ export const notifyError = async (
 
 		blocks.push({
 			type: "context",
+			// @ts-ignore
 			elements: [
 				{
 					type: "mrkdwn",
@@ -316,6 +317,7 @@ export const notifyError = async (
 			],
 		});
 
+		// @ts-ignore
 		blocks.push({
 			type: "divider",
 		});

@@ -27,13 +27,15 @@ export const authenticate = (
 	try {
 		const authHeader = req.header("Authorization");
 		if (!authHeader) {
-			return res.status(401).json({ message: "認証トークンがありません" });
+			res.status(401).json({ message: "認証トークンがありません" });
+			return;
 		}
 
 		// Bearer トークンの形式チェック
-		const parts = authHeader.split(" ");
+		const parts = (authHeader ?? "").split(" ");
 		if (parts.length !== 2 || parts[0] !== "Bearer") {
-			return res.status(401).json({ message: "認証形式が不正です" });
+			res.status(401).json({ message: "認証形式が不正です" });
+			return;
 		}
 
 		const token = parts[1];
@@ -50,7 +52,7 @@ export const authenticate = (
 		next();
 	} catch (error) {
 		console.error("認証エラー:", error);
-		return res.status(401).json({ message: "無効なトークンです" });
+		res.status(401).json({ message: "無効なトークンです" });
 	}
 };
 
@@ -61,7 +63,7 @@ export const requireAdmin = (
 	next: NextFunction,
 ) => {
 	if (!req.user || req.user.role !== "admin") {
-		return res.status(403).json({ message: "管理者権限が必要です" });
+		res.status(403).json({ message: "管理者権限が必要です" });
 	}
 	next();
 };

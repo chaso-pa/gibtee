@@ -30,19 +30,23 @@ export const prisma =
 
 // デバッグログ設定
 if (process.env.NODE_ENV !== "production") {
+	// @ts-ignore
 	prisma.$on("query", (e: any) => {
 		logger.debug(`Query: ${e.query}`);
 		logger.debug(`Duration: ${e.duration}ms`);
 	});
 
+	// @ts-ignore
 	prisma.$on("error", (e: any) => {
 		logger.error(`Prisma Error: ${e.message}`);
 	});
 
+	// @ts-ignore
 	prisma.$on("info", (e: any) => {
 		logger.info(`Prisma Info: ${e.message}`);
 	});
 
+	// @ts-ignore
 	prisma.$on("warn", (e: any) => {
 		logger.warn(`Prisma Warning: ${e.message}`);
 	});

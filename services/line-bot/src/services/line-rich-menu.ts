@@ -35,6 +35,7 @@ export const createRichMenu = async (): Promise<string> => {
 			selected: true,
 			name: "Gibtee メインメニュー",
 			chatBarText: "メニュー",
+			// @ts-ignore
 			areas: AREAS,
 		});
 

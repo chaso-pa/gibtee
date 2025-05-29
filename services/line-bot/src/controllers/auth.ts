@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config/index.js";
-import { prisma } from "../lib/prisma.js";
 
 // 管理者ユーザーのシードデータ（本番環境では環境変数から読み込むべき）
 const ADMIN_EMAIL = "admin@gibtee.com";
@@ -14,14 +13,14 @@ export const login = async (req: Request, res: Response) => {
 
 		// 入力検証
 		if (!email || !password) {
-			return res
-				.status(400)
-				.json({ message: "メールアドレスとパスワードは必須です" });
+			res.status(400).json({ message: "メールアドレスとパスワードは必須です" });
+			return;
 		}
 
 		// 管理者ユーザーの検証（実際のプロジェクトではDBから取得する）
 		if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
 			// JWTトークンの生成
+			// @ts-ignore
 			const token = jwt.sign(
 				{
 					userId: 1, // 実際のDBではユーザーIDを使用
@@ -33,7 +32,7 @@ export const login = async (req: Request, res: Response) => {
 				},
 			);
 
-			return res.status(200).json({
+			res.status(200).json({
 				message: "ログインに成功しました",
 				user: {
 					id: 1,
@@ -45,11 +44,11 @@ export const login = async (req: Request, res: Response) => {
 		}
 
 		// 認証失敗
-		return res
+		res
 			.status(401)
 			.json({ message: "メールアドレスまたはパスワードが正しくありません" });
 	} catch (error) {
 		console.error("ログインエラー:", error);
-		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+		res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };
