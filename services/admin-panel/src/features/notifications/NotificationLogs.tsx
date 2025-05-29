@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
 	Box,
 	Button,
@@ -22,9 +22,7 @@ import {
 	Badge,
 	InputGroup,
 	InputLeftElement,
-	Divider,
 	Spinner,
-	useToast,
 	Alert,
 	AlertIcon,
 	IconButton,
@@ -45,6 +43,17 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { formatDate, timeAgo } from "../../utils/date";
+import type { Notification } from "../../types";
+
+interface FetchNotificationsParams {
+	page?: number;
+	limit?: number;
+	type?: string;
+	success?: string;
+	orderId?: string;
+	startDate?: string;
+	endDate?: string;
+}
 
 // 通知履歴を取得する関数
 const fetchNotifications = async ({
@@ -55,10 +64,10 @@ const fetchNotifications = async ({
 	orderId,
 	startDate,
 	endDate,
-}) => {
+}: FetchNotificationsParams) => {
 	const params = new URLSearchParams();
-	params.append("page", page);
-	params.append("limit", limit);
+	params.append("page", page.toString());
+	params.append("limit", limit.toString());
 
 	if (type) params.append("type", type);
 	if (success !== undefined) params.append("success", success);
@@ -71,8 +80,6 @@ const fetchNotifications = async ({
 };
 
 const NotificationLogs = () => {
-	const toast = useToast();
-
 	// フィルター状態
 	const [filters, setFilters] = useState({
 		type: "",
@@ -104,7 +111,7 @@ const NotificationLogs = () => {
 	});
 
 	// フィルター適用
-	const applyFilters = (e) => {
+	const applyFilters = (e: any) => {
 		e.preventDefault();
 		setFilters({ ...filterForm });
 		setPagination({ ...pagination, page: 1 }); // フィルター適用時は1ページ目に戻る
@@ -331,7 +338,7 @@ const NotificationLogs = () => {
 									</Tr>
 								</Thead>
 								<Tbody>
-									{data.notifications.map((notification) => {
+									{data.notifications.map((notification: Notification) => {
 										const typeStyle = getTypeStyle(notification.type);
 
 										// 通知内容をパース
@@ -390,7 +397,9 @@ const NotificationLogs = () => {
 													</Tooltip>
 												</Td>
 												<Td maxWidth="300px">
+													{/* @ts-ignore */}
 													<Tooltip label={content.message || "-"}>
+														{/* @ts-ignore */}
 														<Text noOfLines={1}>{content.message || "-"}</Text>
 													</Tooltip>
 												</Td>

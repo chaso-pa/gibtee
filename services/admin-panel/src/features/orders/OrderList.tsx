@@ -17,11 +17,9 @@ import {
 	Stack,
 	HStack,
 	IconButton,
-	useDisclosure,
 	FormControl,
 	FormLabel,
 	Heading,
-	useToast,
 	Spinner,
 	Tooltip,
 } from "@chakra-ui/react";
@@ -55,7 +53,6 @@ const fetchOrders = async (params: any) => {
 
 export const OrderList: React.FC = () => {
 	const navigate = useNavigate();
-	const toast = useToast();
 
 	// フィルター状態
 	const [filters, setFilters] = useState({

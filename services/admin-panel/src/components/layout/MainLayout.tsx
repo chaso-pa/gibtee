@@ -8,7 +8,7 @@ import {
 	IconButton,
 	useDisclosure,
 } from "@chakra-ui/react";
-import { type ReactNode, useRef } from "react";
+import { useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
