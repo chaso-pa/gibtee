@@ -1,26 +1,4 @@
 services:
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    container_name: gibtee-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-gibtee}
-      MYSQL_USER: ${MYSQL_USER:-gibtee}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d
-    networks:
-      - gibtee-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-
   # LINE Bot Service
   line-bot:
     build:
@@ -31,7 +9,7 @@ services:
       - "3000:3000"
     environment:
       # Database
-      DATABASE_URL: mysql://${MYSQL_USER:-gibtee}:${MYSQL_PASSWORD:-password}@mysql:3306/${MYSQL_DATABASE:-gibtee}
+      DATABASE_URL: mysql://${MYSQL_USER:-gibtee}:${MYSQL_PASSWORD:-password}@192.168.3.100:23306/${MYSQL_DATABASE:-gibtee}
 
       # LINE Configuration
       LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN}
@@ -57,9 +35,6 @@ services:
 
       # Service URLs
       IMAGE_PROCESSOR_URL: http://image-processor:4000
-    depends_on:
-      mysql:
-        condition: service_healthy
     networks:
       - gibtee-network
     volumes:
@@ -75,7 +50,7 @@ services:
       - "4000:4000"
     environment:
       # Database
-      DATABASE_URL: mysql://${MYSQL_USER:-gibtee}:${MYSQL_PASSWORD:-password}@mysql:3306/${MYSQL_DATABASE:-gibtee}
+      DATABASE_URL: mysql://${MYSQL_USER:-gibtee}:${MYSQL_PASSWORD:-password}@192.168.3.100:23306/${MYSQL_DATABASE:-gibtee}
 
       # AWS Configuration
       AWS_REGION: ${AWS_REGION:-ap-southeast-1}
@@ -88,9 +63,6 @@ services:
 
       # Service URLs
       LINE_BOT_URL: http://line-bot:3000
-    depends_on:
-      mysql:
-        condition: service_healthy
     networks:
       - gibtee-network
     volumes:
@@ -101,14 +73,15 @@ services:
   admin-panel:
     build:
       context: ./services/admin-panel
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     container_name: gibtee-admin-panel
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "4001:80"
     environment:
       # API URLs for frontend
-      VITE_LINE_BOT_API_URL: ${VITE_LINE_BOT_API_URL:-http://localhost:3000}
-      VITE_IMAGE_PROCESSOR_API_URL: ${VITE_IMAGE_PROCESSOR_API_URL:-http://localhost:4000}
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     depends_on:
       - line-bot
       - image-processor
@@ -116,8 +89,6 @@ services:
       - gibtee-network
 
 volumes:
-  mysql_data:
-    driver: local
   line_bot_logs:
     driver: local
   image_processor_logs:
