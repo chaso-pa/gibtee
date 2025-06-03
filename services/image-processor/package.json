@@ -1,42 +1,43 @@
 {
-  "name": "image-processor",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/app.js",
-    "dev": "tsx watch src/app.ts",
-    "lint": "eslint . --ext .ts",
-    "test": "jest"
-  },
-  "main": "index.js",
-  "license": "MIT",
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.806.0",
-    "@aws-sdk/lib-storage": "^3.806.0",
-    "@aws-sdk/s3-request-presigner": "^3.806.0",
-    "@prisma/client": "^6.7.0",
-    "axios": "^1.9.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "helmet": "^8.1.0",
-    "mime-types": "^3.0.1",
-    "multer": "^1.4.5-lts.2",
-    "openai": "^4.98.0",
-    "sharp": "^0.34.1",
-    "uuid": "^11.1.0",
-    "winston": "^3.17.0"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.1",
-    "@types/mime-types": "^2.1.4",
-    "@types/multer": "^1.4.12",
-    "@types/node": "^22.15.17",
-    "@types/uuid": "^10.0.0",
-    "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
-  }
+	"name": "image-processor",
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"build": "tsc",
+		"start": "node dist/app.js",
+		"dev": "tsx watch src/app.ts",
+		"lint": "eslint . --ext .ts",
+		"test": "jest",
+		"format": "biome format --write ./src"
+	},
+	"main": "index.js",
+	"license": "MIT",
+	"dependencies": {
+		"@aws-sdk/client-s3": "^3.806.0",
+		"@aws-sdk/lib-storage": "^3.806.0",
+		"@aws-sdk/s3-request-presigner": "^3.806.0",
+		"@prisma/client": "^6.7.0",
+		"axios": "^1.9.0",
+		"cors": "^2.8.5",
+		"dotenv": "^16.5.0",
+		"express": "^5.1.0",
+		"helmet": "^8.1.0",
+		"mime-types": "^3.0.1",
+		"multer": "^1.4.5-lts.2",
+		"openai": "^4.98.0",
+		"sharp": "^0.34.1",
+		"uuid": "^11.1.0",
+		"winston": "^3.17.0"
+	},
+	"devDependencies": {
+		"@types/express": "^5.0.1",
+		"@types/mime-types": "^2.1.4",
+		"@types/multer": "^1.4.12",
+		"@types/node": "^22.15.17",
+		"@types/uuid": "^10.0.0",
+		"nodemon": "^3.1.10",
+		"ts-node": "^10.9.2",
+		"tsx": "^4.19.4",
+		"typescript": "^5.8.3"
+	}
 }
