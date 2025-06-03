@@ -1,7 +1,6 @@
 import { OrderStatus } from "@prisma/client";
 import { logger } from "../utils/logger.js";
-import { sendTextMessage, sendFlexMessage } from "./line.js";
-import * as flexTemplate from "./flex-message.js";
+import { sendFlexMessage } from "./line.js";
 
 /**
  * 注文ステータス更新の通知を送信する
@@ -17,9 +16,6 @@ export const sendOrderStatusNotification = async (
 	try {
 		// ステータスに応じた日本語のステータス名
 		const statusText = getStatusText(status);
-
-		// 基本テキストメッセージ
-		const message = `ご注文 #${orderNumber} のステータスが「${statusText}」に更新されました。`;
 
 		// Flexメッセージを作成
 		const flexContent = createStatusUpdateFlexMessage(
@@ -38,7 +34,7 @@ export const sendOrderStatusNotification = async (
 		logger.info(
 			`注文ステータス通知送信成功: LineUserId=${lineUserId}, OrderNumber=${orderNumber}, Status=${status}`,
 		);
-	} catch (error) {
+	} catch (error: any) {
 		logger.error(`注文ステータス通知送信エラー: ${error.message}`);
 		throw error;
 	}
@@ -65,14 +61,6 @@ export const sendShippingNotification = async (
 		// 配送業者の表示名を取得
 		const carrierName = getCarrierName(shippingCarrier);
 
-		// 基本のテキストメッセージ
-		const message = `ご注文 #${orderNumber} が発送されました。\n配送業者: ${carrierName}\n追跡番号: ${trackingNumber}`;
-
-		// 配達予定日のテキスト
-		const deliveryDateText = estimatedDeliveryAt
-			? `${formatDate(estimatedDeliveryAt)}頃のお届け予定です。`
-			: "";
-
 		// Flexメッセージを作成
 		const flexContent = createShippingFlexMessage(
 			orderNumber,
@@ -88,7 +76,7 @@ export const sendShippingNotification = async (
 		logger.info(
 			`配送情報通知送信成功: LineUserId=${lineUserId}, OrderNumber=${orderNumber}, Carrier=${shippingCarrier}`,
 		);
-	} catch (error) {
+	} catch (error: any) {
 		logger.error(`配送情報通知送信エラー: ${error.message}`);
 		throw error;
 	}
@@ -151,7 +139,6 @@ const createStatusUpdateFlexMessage = (
 ) => {
 	// ステータスに応じた色とアイコン
 	const statusColor = getStatusColor(status);
-	const statusIcon = getStatusIcon(status);
 
 	return {
 		type: "bubble",
@@ -478,29 +465,5 @@ const getStatusColor = (status: OrderStatus): string => {
 			return "#B41D1D";
 		default:
 			return "#1DB446";
-	}
-};
-
-/**
- * ステータスに応じたアイコンを取得
- */
-const getStatusIcon = (status: OrderStatus): string => {
-	switch (status) {
-		case OrderStatus.pending:
-			return "⏱";
-		case OrderStatus.paid:
-			return "💰";
-		case OrderStatus.processing:
-			return "🔄";
-		case OrderStatus.printing:
-			return "🖨";
-		case OrderStatus.shipped:
-			return "📦";
-		case OrderStatus.delivered:
-			return "✅";
-		case OrderStatus.cancelled:
-			return "❌";
-		default:
-			return "i";
 	}
 };

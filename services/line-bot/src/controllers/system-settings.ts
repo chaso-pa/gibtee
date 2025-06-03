@@ -7,7 +7,7 @@ import { logger } from "../utils/logger.js";
  * システム設定を取得
  */
 export const getSystemSettings = async (
-	req: Request,
+	_req: Request,
 	res: Response,
 ): Promise<void> => {
 	try {
@@ -94,7 +94,7 @@ export const updateSystemSettings = async (
  * 注文受付状態のみを取得（LINEボット側で使用）
  */
 export const getOrderAcceptanceStatus = async (
-	req: Request,
+	_req: Request,
 	res: Response,
 ): Promise<void> => {
 	try {

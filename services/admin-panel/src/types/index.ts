@@ -66,7 +66,12 @@ export interface Order {
 		id: number;
 		lineUserId: string;
 		displayName?: string;
+		profileImageUrl?: string;
 	};
+	image: {
+		id: number;
+	};
+	orderHistories: OrderHistory[];
 	payments: Payment[];
 	imageUrl?: string;
 }
@@ -136,9 +141,12 @@ export interface PaginationParams {
 
 export interface OrdersResponse {
 	orders: Order[];
-	total: number;
-	page: number;
-	limit: number;
+	pagination: {
+		total: number;
+		totalPages: number;
+		page: number;
+		limit: number;
+	};
 }
 
 export interface OrderFilters {

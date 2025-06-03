@@ -76,7 +76,7 @@ export const getNotifications = async (req: Request, res: Response) => {
 			prisma.notification.count({ where }),
 		]);
 
-		return res.status(200).json({
+		res.status(200).json({
 			notifications,
 			pagination: {
 				total,
@@ -87,6 +87,6 @@ export const getNotifications = async (req: Request, res: Response) => {
 		});
 	} catch (error) {
 		console.error("通知履歴取得エラー:", error);
-		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+		res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };

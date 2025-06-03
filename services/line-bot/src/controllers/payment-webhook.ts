@@ -29,6 +29,7 @@ export const stripeWebhook = async (
 		}
 
 		// Stripeからのwebhookイベントを処理
+		// @ts-ignore
 		const event = await handleStripeWebhook(signature, req.rawBody);
 
 		if (!event) {

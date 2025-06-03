@@ -9,8 +9,8 @@ const router = express.Router();
 router.use(checkOrderAcceptance);
 
 // ヘルスチェックエンドポイント
-router.get("/health", (req, res) => {
-	res.status(200).json({ status: "ok" });
+router.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
 // LINE Webhook

@@ -43,6 +43,7 @@ const transports = [
 // 開発環境ではコンソールにも出力
 if (config.nodeEnv !== "production") {
 	transports.push(
+		// @ts-ignore
 		new winston.transports.Console({
 			format: consoleFormat,
 		}),

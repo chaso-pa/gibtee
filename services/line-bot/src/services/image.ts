@@ -17,8 +17,8 @@ export const handleImageMessage = async (
 	userId: string,
 	message: ImageEventMessage,
 	replyToken: string,
-	currentState: ConversationState,
-	context: any,
+	_currentState: ConversationState,
+	_context: any,
 ): Promise<void> => {
 	try {
 		logger.info(`画像メッセージ受信: ${message.id} (${userId})`);

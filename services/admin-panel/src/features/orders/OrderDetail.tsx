@@ -63,7 +63,13 @@ import {
 } from "@chakra-ui/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
-import type { Order, OrderStatus, Payment, Notification } from "../../types";
+import type {
+	Order,
+	OrderStatus,
+	Payment,
+	Notification,
+	OrderHistory,
+} from "../../types";
 import { OrderStatusBadge } from "../../components/common/OrderStatusBadge";
 import { formatDate, timeAgo } from "../../utils/date";
 import {
@@ -200,7 +206,6 @@ export const OrderDetail: React.FC = () => {
 		data: order,
 		isLoading,
 		isError,
-		refetch,
 	} = useQuery({
 		queryKey: ["order", orderId],
 		queryFn: () => fetchOrderDetail(orderId || ""),
@@ -722,7 +727,7 @@ export const OrderDetail: React.FC = () => {
 									<TabPanel p={3}>
 										{order.orderHistories && order.orderHistories.length > 0 ? (
 											<VStack align="stretch" spacing={3}>
-												{order.orderHistories.map((history) => (
+												{order.orderHistories.map((history: OrderHistory) => (
 													<Box
 														key={history.id}
 														p={3}

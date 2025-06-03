@@ -15,7 +15,7 @@ import {
 const prisma = new PrismaClient();
 
 // 注文一覧を取得するコントローラー
-export const getOrders = async (req: Request, res: Response) => {
+export const getOrders = async (req: Request, res: Response): Promise<void> => {
 	try {
 		const {
 			page = 1,
@@ -132,7 +132,7 @@ export const getOrders = async (req: Request, res: Response) => {
 		]);
 
 		// ページネーション情報を含めたレスポンス
-		return res.status(200).json({
+		res.status(200).json({
 			orders,
 			pagination: {
 				total,
@@ -143,12 +143,15 @@ export const getOrders = async (req: Request, res: Response) => {
 		});
 	} catch (error) {
 		console.error("注文一覧取得エラー:", error);
-		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+		res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };
 
 // 注文詳細を取得するコントローラー
-export const getOrderById = async (req: Request, res: Response) => {
+export const getOrderById = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
 	try {
 		const { id } = req.params;
 
@@ -175,25 +178,28 @@ export const getOrderById = async (req: Request, res: Response) => {
 		});
 
 		if (!order) {
-			return res.status(404).json({ message: "注文が見つかりません" });
+			res.status(404).json({ message: "注文が見つかりません" });
 		}
 
-		return res.status(200).json({ order });
+		res.status(200).json({ order });
 	} catch (error) {
 		console.error("注文詳細取得エラー:", error);
-		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+		res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };
 
 // 注文ステータスを更新するコントローラー
-export const updateOrderStatus = async (req: Request, res: Response) => {
+export const updateOrderStatus = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
 	try {
 		const { id } = req.params;
 		const { status, adminMemo, notifyCustomer } = req.body;
 
 		// ステータスの型チェック
 		if (status && !Object.values(OrderStatus).includes(status as OrderStatus)) {
-			return res.status(400).json({ message: "無効なステータスです" });
+			res.status(400).json({ message: "無効なステータスです" });
 		}
 
 		// 注文の存在確認
@@ -207,10 +213,6 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 				},
 			},
 		});
-
-		if (!order) {
-			return res.status(404).json({ message: "注文が見つかりません" });
-		}
 
 		// トランザクションで注文更新と履歴追加を実行
 		const result = await prisma.$transaction(async (tx) => {
@@ -233,9 +235,13 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 				},
 			});
 
+			if (!order) {
+				res.status(404).json({ message: "注文が見つかりません" });
+			}
+
 			// 顧客通知が有効な場合
 			let notification = null;
-			if (notifyCustomer && order.user?.lineUserId) {
+			if (notifyCustomer && order?.user?.lineUserId) {
 				// 通知レコードを作成
 				notification = await tx.notification.create({
 					data: {
@@ -260,7 +266,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 				updatedOrder,
 				history,
 				notification,
-				lineUserId: order.user?.lineUserId,
+				lineUserId: order?.user?.lineUserId ?? undefined,
 			};
 		});
 
@@ -269,13 +275,13 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 			try {
 				await sendOrderStatusNotification(
 					result.lineUserId,
-					order.orderNumber,
+					order?.orderNumber ?? "",
 					status as OrderStatus,
 				);
 
 				// 通知成功ログ
 				logger.info(
-					`注文ステータス通知送信成功: OrderID=${order.id}, NotificationID=${result.notification.id}`,
+					`注文ステータス通知送信成功: OrderID=${order?.id}, NotificationID=${result.notification.id}`,
 				);
 
 				// 通知成功フラグを更新
@@ -289,10 +295,10 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 					where: { id: Number(id) },
 					data: { notifiedStatus: true },
 				});
-			} catch (error) {
+			} catch (error: any) {
 				// 通知失敗ログ
 				logger.error(
-					`注文ステータス通知送信失敗: OrderID=${order.id}, NotificationID=${result.notification.id}, Error=${error.message}`,
+					`注文ステータス通知送信失敗: OrderID=${order?.id}, NotificationID=${result.notification.id}, Error=${error.message}`,
 				);
 
 				// 通知失敗フラグを更新
@@ -306,19 +312,22 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 			}
 		}
 
-		return res.status(200).json({
+		res.status(200).json({
 			message: "注文ステータスを更新しました",
 			order: result.updatedOrder,
 			notified: notifyCustomer && result.lineUserId ? true : false,
 		});
 	} catch (error) {
 		console.error("注文ステータス更新エラー:", error);
-		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+		res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };
 
 // 配送情報を更新するコントローラー
-export const updateOrderShipping = async (req: Request, res: Response) => {
+export const updateOrderShipping = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
 	try {
 		const { id } = req.params;
 		const {
@@ -331,7 +340,8 @@ export const updateOrderShipping = async (req: Request, res: Response) => {
 
 		// 必須フィールドのチェック
 		if (!shippingCarrier || !trackingNumber) {
-			return res.status(400).json({ message: "配送業者と追跡番号は必須です" });
+			res.status(400).json({ message: "配送業者と追跡番号は必須です" });
+			return;
 		}
 
 		// 注文の存在確認
@@ -347,7 +357,8 @@ export const updateOrderShipping = async (req: Request, res: Response) => {
 		});
 
 		if (!order) {
-			return res.status(404).json({ message: "注文が見つかりません" });
+			res.status(404).json({ message: "注文が見つかりません" });
+			return;
 		}
 
 		// トランザクションで注文更新と履歴追加を実行
@@ -439,7 +450,7 @@ export const updateOrderShipping = async (req: Request, res: Response) => {
 					where: { id: Number(id) },
 					data: { notifiedShipping: true },
 				});
-			} catch (error) {
+			} catch (error: any) {
 				// 通知失敗ログ
 				logger.error(
 					`配送情報通知送信失敗: OrderID=${order.id}, NotificationID=${result.notification.id}, Error=${error.message}`,
@@ -456,19 +467,22 @@ export const updateOrderShipping = async (req: Request, res: Response) => {
 			}
 		}
 
-		return res.status(200).json({
+		res.status(200).json({
 			message: "配送情報を更新しました",
 			order: result.updatedOrder,
 			notified: notifyCustomer && result.lineUserId ? true : false,
 		});
 	} catch (error) {
 		console.error("配送情報更新エラー:", error);
-		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+		res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };
 
 // 注文通知履歴を取得するコントローラー
-export const getOrderNotifications = async (req: Request, res: Response) => {
+export const getOrderNotifications = async (
+	req: Request,
+	res: Response,
+): Promise<void> => {
 	try {
 		const { id } = req.params;
 
@@ -478,7 +492,8 @@ export const getOrderNotifications = async (req: Request, res: Response) => {
 		});
 
 		if (!order) {
-			return res.status(404).json({ message: "注文が見つかりません" });
+			res.status(404).json({ message: "注文が見つかりません" });
+			return;
 		}
 
 		// 通知履歴を取得
@@ -487,9 +502,9 @@ export const getOrderNotifications = async (req: Request, res: Response) => {
 			orderBy: { createdAt: "desc" },
 		});
 
-		return res.status(200).json({ notifications });
+		res.status(200).json({ notifications });
 	} catch (error) {
 		console.error("通知履歴取得エラー:", error);
-		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+		res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };

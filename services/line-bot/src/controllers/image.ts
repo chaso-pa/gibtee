@@ -12,7 +12,8 @@ export const getImageSignedUrl = async (req: Request, res: Response) => {
 		const imageId = parseInt(id, 10);
 
 		if (isNaN(imageId)) {
-			return res.status(400).json({ message: "無効な画像IDです" });
+			res.status(400).json({ message: "無効な画像IDです" });
+			return;
 		}
 
 		const image = await prisma.image.findUnique({
@@ -24,9 +25,9 @@ export const getImageSignedUrl = async (req: Request, res: Response) => {
 		}
 
 		const signedUrl = await getS3SignedUrl(image.ghibliImagePath);
-		return res.status(200).json({ url: signedUrl });
+		res.status(200).json({ url: signedUrl });
 	} catch (error: any) {
 		logger.error(`画像URL取得エラー: ${error.message}`);
-		return res.status(500).json({ message: "サーバーエラーが発生しました" });
+		res.status(500).json({ message: "サーバーエラーが発生しました" });
 	}
 };

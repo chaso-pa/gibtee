@@ -186,9 +186,6 @@ export const createTshirtPreviewFlex = (
 						? "#C13B3B"
 						: "#FFFFFF";
 
-	// 白色の場合はテキストを黒に、それ以外は白に
-	const textColor = color === "white" ? "#111111" : "#FFFFFF";
-
 	const container: FlexContainer = {
 		type: "bubble",
 		size: "kilo",

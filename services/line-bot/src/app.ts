@@ -28,7 +28,7 @@ app.use(helmet());
 app.use(cors());
 app.use(
 	express.json({
-		verify: (req, res, buf) => {
+		verify: (req, _res, buf) => {
 			// LINE Webhookの署名検証のため生のリクエストボディを保持
 			(req as any).rawBody = buf;
 		},
@@ -54,7 +54,7 @@ app.use(
 		err: any,
 		req: express.Request,
 		res: express.Response,
-		next: express.NextFunction,
+		_next: express.NextFunction,
 	) => {
 		logger.error(`Error: ${err.message}`);
 

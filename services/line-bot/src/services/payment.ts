@@ -16,7 +16,6 @@ const CALLBACK_URL =
 	"https://0ad0-125-197-4-55.ngrok-free.app/callback";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
-const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 // Stripeインスタンスの初期化
@@ -45,7 +44,6 @@ export const createLinePayRequest = async (
 		);
 
 		// リクエストデータの作成
-		const requestId = uuidv4();
 		const payload = {
 			amount,
 			currency: "JPY",
@@ -423,7 +421,7 @@ export const processPayment = async (
 	orderId: number,
 	orderNumber: string,
 	amount: number,
-	paymentDetails: any,
+	_paymentDetails: any,
 ): Promise<{
 	success: boolean;
 	paymentUrl?: string;

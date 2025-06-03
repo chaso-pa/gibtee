@@ -110,7 +110,7 @@ export const updateUserConversationState = async (
 		// 会話状態を更新または作成
 		await prisma.conversation.upsert({
 			where: {
-				id: user.Conversation?.[0]?.id || 0,
+				id: user.conversations?.[0]?.id || 0,
 			},
 			update: {
 				state,
