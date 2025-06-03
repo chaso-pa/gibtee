@@ -37,7 +37,6 @@ docker-compose up -d --build
 - Admin Panel: http://localhost (port 80)
 - LINE Bot API: http://localhost:3000
 - Image Processor API: http://localhost:4000
-- MySQL Database: localhost:3306
 
 ### Service Architecture
 
@@ -63,7 +62,7 @@ docker-compose up -d --build
 # Build LINE Bot service
 docker-compose build line-bot
 
-# Build Image Processor service  
+# Build Image Processor service
 docker-compose build image-processor
 
 # Build Admin Panel service
@@ -168,7 +167,7 @@ docker stack deploy -c docker-compose.yml gibtee
 
 All services include health check endpoints:
 - LINE Bot: `GET /health`
-- Image Processor: `GET /health`  
+- Image Processor: `GET /health`
 - Admin Panel: `GET /health`
 
 ### Backup and Recovery
