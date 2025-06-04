@@ -6,9 +6,10 @@
 		"build": "tsc",
 		"start": "node dist/app.js",
 		"dev": "tsx watch src/app.ts",
-		"lint": "eslint . --ext .ts",
 		"test": "jest",
-		"format": "biome format --write ./src"
+		"lint": "biome lint ./src",
+		"format": "biome format --write ./src",
+		"format:check": "biome format --check ./src"
 	},
 	"main": "index.js",
 	"license": "MIT",
@@ -30,6 +31,7 @@
 		"winston": "^3.17.0"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
 		"@types/express": "^5.0.1",
 		"@types/mime-types": "^2.1.4",
 		"@types/multer": "^1.4.12",
