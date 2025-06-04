@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'services/**'
+
+jobs:
+
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      line-bot: ${{ steps.changes.outputs.line-bot }}
+      admin-panel: ${{ steps.changes.outputs.admin-panel }}
+      image-processor: ${{ steps.changes.outputs.image-processor }}
+      any-service-changed: ${{ steps.check-any.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            line-bot:
+              - 'services/line-bot/**'
+            admin-panel:
+              - 'services/admin-panel/**'
+            image-processor:
+              - 'services/image-processor/**'
+
+      - name: Check if any service changed
+        id: check-any
+        run: |
+          if [[ "${{ steps.changes.outputs.line-bot }}" == "true" || \
+                "${{ steps.changes.outputs.admin-panel }}" == "true" || \
+                "${{ steps.changes.outputs.image-processor }}" == "true" ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  bump-version:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any-service-changed == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      new-tag: ${{ steps.bump.outputs.new_tag }}
+      changelog: ${{ steps.bump.outputs.changelog }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version and create tag
+        id: bump
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag_prefix: "v"
+          default_bump: "patch"
+          release_branches: "master"
+          append_to_pre_release_tag: ""
+          dry_run: false
+
+      - name: Create Release
+        if: steps.bump.outputs.new_tag
+        uses: actions/create-release@v1
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.bump.outputs.new_tag }}
+          release_name: "Release ${{ steps.bump.outputs.new_tag }}"
+          body: |
+            ## Changes in this release
+
+
+            ### Services Updated:
+            ${{ needs.detect-changes.outputs.line-bot == 'true' && '- line-bot' || '' }}
+            ${{ needs.detect-changes.outputs.admin-panel == 'true' && '- admin-panel' || '' }}
+            ${{ needs.detect-changes.outputs.image-processor == 'true' && '- image-processor' || '' }}
+
+
+            ### Changelog
+            ${{ steps.bump.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+  notify-slack:
+    needs: [detect-changes, bump-version]
+    if: needs.detect-changes.outputs.any-service-changed == 'true' && needs.bump-version.outputs.new-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "🚀 New release created: ${{ needs.bump-version.outputs.new-tag }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🚀 New gibtee release: ${{ needs.bump-version.outputs.new-tag }}*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Services Updated:*\n${{ needs.detect-changes.outputs.line-bot == 'true' && '• line-bot\n' || '' }}${{ needs.detect-changes.outputs.admin-panel == 'true' && '• admin-panel\n' || '' }}${{ needs.detect-changes.outputs.image-processor == 'true' && '• image-processor\n' || '' }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Release"
+                      },
+                      "url": "https://github.com/chaso-pa/gibtee/releases/tag/${{ needs.bump-version.outputs.new-tag }}"
+                    }
+                  ]
+                }
+              ]
+            }' \
+            $SLACK_WEBHOOK_URL

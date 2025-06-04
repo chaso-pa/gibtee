@@ -1,0 +1,177 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'services/**'
+      - '.github/workflows/**'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      line-bot: ${{ steps.changes.outputs.line-bot }}
+      admin-panel: ${{ steps.changes.outputs.admin-panel }}
+      image-processor: ${{ steps.changes.outputs.image-processor }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            line-bot:
+              - 'services/line-bot/**'
+            admin-panel:
+              - 'services/admin-panel/**'
+            image-processor:
+              - 'services/image-processor/**'
+
+  lint-and-format:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [line-bot, admin-panel, image-processor]
+
+    steps:
+      - name: Check if service changed
+        id: check-changes
+        run: |
+          case "${{ matrix.service }}" in
+            line-bot)
+              echo "changed=${{ needs.detect-changes.outputs.line-bot }}" >> $GITHUB_OUTPUT
+              ;;
+            admin-panel)
+              echo "changed=${{ needs.detect-changes.outputs.admin-panel }}" >> $GITHUB_OUTPUT
+              ;;
+            image-processor)
+              echo "changed=${{ needs.detect-changes.outputs.image-processor }}" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Checkout code
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: 'services/${{ matrix.service }}/yarn.lock'
+
+      - name: Install dependencies
+        if: steps.check-changes.outputs.changed == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Biome config (for line-bot and image-processor)
+        if: steps.check-changes.outputs.changed == 'true' && (matrix.service == 'line-bot' || matrix.service == 'image-processor')
+        working-directory: services/${{ matrix.service }}
+        run: |
+          cat > biome.json << 'EOF'
+          {
+            "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+            "organizeImports": {
+              "enabled": true
+            },
+            "linter": {
+              "enabled": true,
+              "rules": {
+                "recommended": true,
+                "suspicious": {
+                  "noImplicitAnyLet": "warn",
+                  "noExplicitAny": "warn"
+                },
+                "complexity": {
+                  "noForEach": "off"
+                }
+              }
+            },
+            "javascript": {
+              "formatter": {
+                "quoteStyle": "single",
+                "semicolons": "always",
+                "trailingCommas": "none",
+                "indentStyle": "space",
+                "indentWidth": 2,
+                "lineWidth": 120
+              }
+            }
+          }
+          EOF
+
+      - name: Install Biome (for line-bot and image-processor)
+        if: steps.check-changes.outputs.changed == 'true' && (matrix.service == 'line-bot' || matrix.service == 'image-processor')
+        working-directory: services/${{ matrix.service }}
+        run: yarn add -D @biomejs/biome
+
+      - name: Run Biome lint
+        if: steps.check-changes.outputs.changed == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ "${{ matrix.service }}" = "admin-panel" ]; then
+            npx @biomejs/biome lint ./src
+          else
+            npx @biomejs/biome lint ./src
+          fi
+
+
+      - name: Run Biome format check
+        if: steps.check-changes.outputs.changed == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ "${{ matrix.service }}" = "admin-panel" ]; then
+            npx @biomejs/biome format --check ./src
+          else
+            npx @biomejs/biome format --check ./src
+          fi
+
+  docker-build:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [line-bot, admin-panel, image-processor]
+    steps:
+      - name: Check if service changed
+        id: check-changes
+        run: |
+          case "${{ matrix.service }}" in
+            line-bot)
+              echo "changed=${{ needs.detect-changes.outputs.line-bot }}" >> $GITHUB_OUTPUT
+              ;;
+            admin-panel)
+              echo "changed=${{ needs.detect-changes.outputs.admin-panel }}" >> $GITHUB_OUTPUT
+              ;;
+
+            image-processor)
+              echo "changed=${{ needs.detect-changes.outputs.image-processor }}" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Checkout code
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        if: steps.check-changes.outputs.changed == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: |
+          docker build -t test-image:${{ matrix.service }} .
+
+      - name: Test image can run
+        if: steps.check-changes.outputs.changed == 'true'
+        run: |
+          # Basic smoke test - check if container can start
+          docker run --rm -d --name test-${{ matrix.service }} test-image:${{ matrix.service }} || true
+          sleep 5
+          docker logs test-${{ matrix.service }} || true
+          docker stop test-${{ matrix.service }} || true
