@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -318,7 +319,7 @@ export const OrderList: React.FC = () => {
             </Table>
 
             {/* ページネーション */}
-            {data && data.pagination && (
+            {data?.pagination && (
               <Flex justify='space-between' align='center' mt={5}>
                 <Text fontSize='sm'>
                   全 {data.pagination.total} 件中 {(data.pagination.page - 1) * data.pagination.limit + 1} -

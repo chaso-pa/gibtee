@@ -70,7 +70,6 @@ const NavItem = ({ icon, to, children }: NavItemProps) => {
         p='4'
         mx='2'
         borderRadius='lg'
-        role='group'
         cursor='pointer'
         bg={isActive ? 'brand.50' : 'transparent'}
         color={isActive ? 'brand.600' : 'gray.600'}
