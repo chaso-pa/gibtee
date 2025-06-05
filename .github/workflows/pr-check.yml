@@ -30,6 +30,7 @@ jobs:
 
   lint-and-format:
     needs: detect-changes
+    fail-fast: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -67,42 +68,6 @@ jobs:
         if: steps.check-changes.outputs.changed == 'true'
         working-directory: services/${{ matrix.service }}
         run: yarn install --frozen-lockfile
-
-      - name: Setup Biome config (for line-bot and image-processor)
-        if: steps.check-changes.outputs.changed == 'true' && (matrix.service == 'line-bot' || matrix.service == 'image-processor')
-        working-directory: services/${{ matrix.service }}
-        run: |
-          cat > biome.json << 'EOF'
-          {
-            "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
-            "organizeImports": {
-              "enabled": true
-            },
-            "linter": {
-              "enabled": true,
-              "rules": {
-                "recommended": true,
-                "suspicious": {
-                  "noImplicitAnyLet": "warn",
-                  "noExplicitAny": "warn"
-                },
-                "complexity": {
-                  "noForEach": "off"
-                }
-              }
-            },
-            "javascript": {
-              "formatter": {
-                "quoteStyle": "single",
-                "semicolons": "always",
-                "trailingCommas": "none",
-                "indentStyle": "space",
-                "indentWidth": 2,
-                "lineWidth": 120
-              }
-            }
-          }
-          EOF
 
       - name: Run Biome lint
         if: steps.check-changes.outputs.changed == 'true'
