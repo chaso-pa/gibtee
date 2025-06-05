@@ -32,8 +32,8 @@ const sendSlackNotification = async (payload: {
       logger.info('Slack notification sent successfully');
       return true;
     }
-      logger.error(`Failed to send Slack notification: ${response.statusText}`);
-      return false;
+    logger.error(`Failed to send Slack notification: ${response.statusText}`);
+    return false;
   } catch (error: any) {
     logger.error(`Error sending Slack notification: ${error.message}`);
     return false;

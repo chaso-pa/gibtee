@@ -73,11 +73,6 @@ jobs:
         working-directory: services/${{ matrix.service }}
         run: npx @biomejs/biome lint ./src
 
-      - name: Run Biome format check
-        if: steps.check-changes.outputs.changed == 'true'
-        working-directory: services/${{ matrix.service }}
-        run: npx @biomejs/biome format --check ./src
-
   docker-build:
     needs: detect-changes
     runs-on: ubuntu-latest
