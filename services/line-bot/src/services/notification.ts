@@ -21,7 +21,7 @@ export const sendOrderStatusNotification = async (
     const flexContent = createStatusUpdateFlexMessage(orderNumber, status, statusText);
 
     // LINEへ通知送信
-    await sendFlexMessage(lineUserId, `ご注文のステータスが更新されました`, flexContent);
+    await sendFlexMessage(lineUserId, 'ご注文のステータスが更新されました', flexContent);
 
     logger.info(`注文ステータス通知送信成功: LineUserId=${lineUserId}, OrderNumber=${orderNumber}, Status=${status}`);
   } catch (error: any) {
@@ -61,7 +61,7 @@ export const sendShippingNotification = async (
     );
 
     // LINEへ通知送信
-    await sendFlexMessage(lineUserId, `ご注文が発送されました`, flexContent);
+    await sendFlexMessage(lineUserId, 'ご注文が発送されました', flexContent);
 
     logger.info(
       `配送情報通知送信成功: LineUserId=${lineUserId}, OrderNumber=${orderNumber}, Carrier=${shippingCarrier}`

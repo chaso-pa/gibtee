@@ -1,5 +1,5 @@
 import axios from 'axios';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { v4 as uuidv4 } from 'uuid';
 import Stripe from 'stripe';
 import { prisma } from '../lib/prisma.js';
@@ -112,9 +112,8 @@ export const createLinePayRequest = async (
         paymentUrl: responseData.info.paymentUrl.web,
         transactionId: responseData.info.transactionId
       };
-    } else {
-      throw new Error(`LINE Pay APIエラー: ${responseData.returnCode} - ${responseData.returnMessage}`);
     }
+      throw new Error(`LINE Pay APIエラー: ${responseData.returnCode} - ${responseData.returnMessage}`);
   } catch (error: any) {
     logger.error(`LINE Pay決済リクエストエラー: ${error.message}`);
     throw new Error(`決済リクエストの作成に失敗しました: ${error.message}`);
@@ -183,9 +182,8 @@ export const confirmLinePayPayment = async (transactionId: string, amount: numbe
 
       logger.info(`LINE Pay決済確定処理成功: transactionId=${transactionId}`);
       return true;
-    } else {
-      throw new Error(`LINE Pay確定APIエラー: ${responseData.returnCode} - ${responseData.returnMessage}`);
     }
+      throw new Error(`LINE Pay確定APIエラー: ${responseData.returnCode} - ${responseData.returnMessage}`);
   } catch (error: any) {
     logger.error(`LINE Pay決済確定処理エラー: ${error.message}`);
     throw new Error(`決済確定処理に失敗しました: ${error.message}`);
@@ -316,14 +314,14 @@ export const checkStripeSessionStatus = async (
         orderId: payment.orderId,
         orderNumber: payment.order.orderNumber
       };
-    } else if (session.status === 'open') {
+    }if (session.status === 'open') {
       // 支払い処理中
       return {
         status: 'PENDING',
         orderId: payment.orderId,
         orderNumber: payment.order.orderNumber
       };
-    } else {
+    }
       // キャンセルまたは失敗
       await prisma.payment.update({
         where: { id: payment.id },
@@ -336,7 +334,6 @@ export const checkStripeSessionStatus = async (
         orderId: payment.orderId,
         orderNumber: payment.order.orderNumber
       };
-    }
   } catch (error: any) {
     logger.error(`Stripe決済セッション確認エラー: ${error.message}`);
     return { status: 'ERROR' };
@@ -396,7 +393,7 @@ export const processPayment = async (
         success: true,
         paymentUrl: result.paymentUrl
       };
-    } else if (method === PaymentMethod.CREDIT_CARD) {
+    }if (method === PaymentMethod.CREDIT_CARD) {
       // LINE Bot用のコールバックURL
       const successUrl = `${CALLBACK_URL}/stripe/success`;
       const cancelUrl = `${CALLBACK_URL}/stripe/cancel`;
@@ -416,9 +413,8 @@ export const processPayment = async (
         paymentUrl: session.sessionUrl,
         sessionId: session.sessionId
       };
-    } else {
-      throw new Error('未対応の決済方法です');
     }
+      throw new Error('未対応の決済方法です');
   } catch (error: any) {
     logger.error(`決済処理エラー: ${error.message}`);
     return {

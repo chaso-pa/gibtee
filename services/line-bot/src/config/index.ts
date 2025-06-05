@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 
 // 環境変数の読み込み
 dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env') });

@@ -294,7 +294,7 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
     res.status(200).json({
       message: '注文ステータスを更新しました',
       order: result.updatedOrder,
-      notified: notifyCustomer && result.lineUserId ? true : false
+      notified: !!(notifyCustomer && result.lineUserId)
     });
   } catch (error) {
     console.error('注文ステータス更新エラー:', error);
@@ -438,7 +438,7 @@ export const updateOrderShipping = async (req: Request, res: Response): Promise<
     res.status(200).json({
       message: '配送情報を更新しました',
       order: result.updatedOrder,
-      notified: notifyCustomer && result.lineUserId ? true : false
+      notified: !!(notifyCustomer && result.lineUserId)
     });
   } catch (error) {
     console.error('配送情報更新エラー:', error);

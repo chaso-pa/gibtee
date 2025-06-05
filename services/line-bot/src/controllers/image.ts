@@ -11,7 +11,7 @@ export const getImageSignedUrl = async (req: Request, res: Response) => {
     const { id } = req.params;
     const imageId = Number.parseInt(id, 10);
 
-    if (isNaN(imageId)) {
+    if (Number.isNaN(imageId)) {
       res.status(400).json({ message: '無効な画像IDです' });
       return;
     }

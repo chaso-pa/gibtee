@@ -1,5 +1,5 @@
 import { lineClient } from '../config/line.js';
-import fs from 'fs';
+import fs from 'node:fs';
 import { logger } from '../utils/logger.js';
 
 // リッチメニューのサイズ設定
@@ -82,7 +82,7 @@ export const deleteAllRichMenus = async (): Promise<void> => {
     const richMenuList = await lineClient.getRichMenuList();
     const deletePromises = richMenuList.map((menu) => lineClient.deleteRichMenu(menu.richMenuId));
     await Promise.all(deletePromises);
-    logger.info(`既存のリッチメニューをすべて削除しました`);
+    logger.info('既存のリッチメニューをすべて削除しました');
   } catch (error: any) {
     logger.error(`リッチメニュー削除エラー: ${error.message}`);
     throw error;

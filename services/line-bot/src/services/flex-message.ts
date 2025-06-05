@@ -1054,7 +1054,7 @@ export const createOrderConfirmationFlex = (orderData: {
                 },
                 {
                   type: 'text',
-                  text: `〒${orderData.postalCode}\n${orderData.prefecture}${orderData.city}${orderData.streetAddress}${orderData.buildingName ? '\n' + orderData.buildingName : ''}`,
+                  text: `〒${orderData.postalCode}\n${orderData.prefecture}${orderData.city}${orderData.streetAddress}${orderData.buildingName ? `\n${orderData.buildingName}` : ''}`,
                   size: 'md',
                   flex: 7,
                   wrap: true
