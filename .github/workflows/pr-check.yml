@@ -104,31 +104,15 @@ jobs:
           }
           EOF
 
-      - name: Install Biome (for line-bot and image-processor)
-        if: steps.check-changes.outputs.changed == 'true' && (matrix.service == 'line-bot' || matrix.service == 'image-processor')
-        working-directory: services/${{ matrix.service }}
-        run: yarn add -D @biomejs/biome
-
       - name: Run Biome lint
         if: steps.check-changes.outputs.changed == 'true'
         working-directory: services/${{ matrix.service }}
-        run: |
-          if [ "${{ matrix.service }}" = "admin-panel" ]; then
-            npx @biomejs/biome lint ./src
-          else
-            npx @biomejs/biome lint ./src
-          fi
-
+        run: npx @biomejs/biome lint ./src
 
       - name: Run Biome format check
         if: steps.check-changes.outputs.changed == 'true'
         working-directory: services/${{ matrix.service }}
-        run: |
-          if [ "${{ matrix.service }}" = "admin-panel" ]; then
-            npx @biomejs/biome format --check ./src
-          else
-            npx @biomejs/biome format --check ./src
-          fi
+        run: npx @biomejs/biome format --check ./src
 
   docker-build:
     needs: detect-changes
@@ -164,14 +148,11 @@ jobs:
       - name: Build Docker image
         if: steps.check-changes.outputs.changed == 'true'
         working-directory: services/${{ matrix.service }}
-        run: |
-          docker build -t test-image:${{ matrix.service }} .
-
-      - name: Test image can run
-        if: steps.check-changes.outputs.changed == 'true'
-        run: |
-          # Basic smoke test - check if container can start
-          docker run --rm -d --name test-${{ matrix.service }} test-image:${{ matrix.service }} || true
-          sleep 5
-          docker logs test-${{ matrix.service }} || true
-          docker stop test-${{ matrix.service }} || true
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          cache-from: type:=gha
+          cache-to: type=gha
