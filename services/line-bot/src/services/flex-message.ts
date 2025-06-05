@@ -1,4 +1,4 @@
-import { FlexMessage, FlexContainer } from '@line/bot-sdk';
+import type { FlexMessage, FlexContainer } from '@line/bot-sdk';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -165,7 +165,7 @@ export const createImageConversionResultFlex = (originalImageUrl: string, ghibli
 /**
  * Tシャツプレビュー表示用のFlexメッセージを作成
  */
-export const createTshirtPreviewFlex = (previewImageUrl: string, color: string = 'white'): FlexMessage => {
+export const createTshirtPreviewFlex = (previewImageUrl: string, color = 'white'): FlexMessage => {
   logger.info('Tシャツプレビュー Flexメッセージ作成');
 
   // カラーに応じたバックグラウンドカラーを設定

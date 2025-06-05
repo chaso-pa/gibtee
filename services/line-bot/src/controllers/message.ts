@@ -1,4 +1,4 @@
-import { MessageEvent, TextEventMessage, ImageEventMessage } from '@line/bot-sdk';
+import type { MessageEvent, TextEventMessage, ImageEventMessage } from '@line/bot-sdk';
 import { logger } from '../utils/logger.js';
 import { sendTextMessage } from '../services/line.js';
 import {
@@ -401,7 +401,7 @@ const handleQuantitySelection = async (userId: string, text: string, context: an
       return;
     }
 
-    const quantity = parseInt(quantityMatch[0], 10);
+    const quantity = Number.parseInt(quantityMatch[0], 10);
 
     // 数量の検証
     if (isNaN(quantity) || quantity < 1 || quantity > 5) {

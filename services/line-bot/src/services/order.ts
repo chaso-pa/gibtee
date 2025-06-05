@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../utils/logger.js';
 import { notifyNewOrder, notifyOrderStatusUpdate } from './slack-notification.js';
-import { OrderStatus } from '@prisma/client';
+import type { OrderStatus } from '@prisma/client';
 
 /**
  * 注文レコードを作成する

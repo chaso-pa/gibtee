@@ -1,4 +1,4 @@
-import { ImageEventMessage } from '@line/bot-sdk';
+import type { ImageEventMessage } from '@line/bot-sdk';
 import { lineClient } from '../config/line.js';
 import { logger } from '../utils/logger.js';
 import { prisma } from '../lib/prisma.js';

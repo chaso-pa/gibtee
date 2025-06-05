@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { getS3SignedUrl } from '@/utils/s3.js';
 import { logger } from '../utils/logger.js';
 import { PrismaClient } from '@prisma/client';
@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 export const getImageSignedUrl = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const imageId = parseInt(id, 10);
+    const imageId = Number.parseInt(id, 10);
 
     if (isNaN(imageId)) {
       res.status(400).json({ message: '無効な画像IDです' });

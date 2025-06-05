@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { WebhookEvent } from '@line/bot-sdk';
+import type { Request, Response } from 'express';
+import type { WebhookEvent } from '@line/bot-sdk';
 import { logger } from '../utils/logger.js';
 import { handleMessage } from './message.js';
 import { handleFollow, handleUnfollow } from './user.js';

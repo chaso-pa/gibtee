@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { checkStripeSessionStatus, handleStripeWebhook } from '../services/payment.js';
 import { sendTextMessage } from '../services/line.js';
 import { getUserByOrderId } from '../services/conversation.js';
@@ -186,7 +186,7 @@ export const stripeWebhook = async (req: Request, res: Response): Promise<void> 
 export const stripeSuccess = async (req: Request, res: Response): Promise<void> => {
   try {
     const sessionId = req.query.session_id as string;
-    const orderId = parseInt(req.query.order_id as string);
+    const orderId = Number.parseInt(req.query.order_id as string);
 
     if (!sessionId || isNaN(orderId)) {
       logger.error('無効なパラメータです');
@@ -219,7 +219,7 @@ export const stripeSuccess = async (req: Request, res: Response): Promise<void> 
  */
 export const stripeCancel = async (req: Request, res: Response): Promise<void> => {
   try {
-    const orderId = parseInt(req.query.order_id as string);
+    const orderId = Number.parseInt(req.query.order_id as string);
 
     if (isNaN(orderId)) {
       logger.error('無効なパラメータです');

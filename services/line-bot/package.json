@@ -9,6 +9,7 @@
 		"test": "jest",
 		"setup-rich-menu": "tsx scripts/setup-rich-menu.ts",
 		"lint": "biome lint ./src",
+		"lint:write": "biome lint --write ./src",
 		"format": "biome format --write ./src",
 		"format:check": "biome format --check ./src"
 	},

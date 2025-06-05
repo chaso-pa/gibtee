@@ -3,7 +3,7 @@ import { logger } from '../utils/logger.js';
 import { getFAQs } from './faq-service.js';
 import { prisma } from '@/lib/prisma.js';
 import { formatOrderStatus, getOrderHistory } from './order-service.js';
-import { Order } from '@prisma/client';
+import type { Order } from '@prisma/client';
 
 /**
  * ヘルプコマンドを処理する

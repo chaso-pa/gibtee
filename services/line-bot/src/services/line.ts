@@ -1,4 +1,4 @@
-import { Message, TextMessage } from '@line/bot-sdk';
+import type { Message, TextMessage } from '@line/bot-sdk';
 import { lineClient } from '../config/line.js';
 import { logger } from '../utils/logger.js';
 

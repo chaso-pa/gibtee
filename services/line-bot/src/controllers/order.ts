@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { PrismaClient, OrderStatus, ShirtSize, ShirtColor, NotificationType } from '@prisma/client';
+import type { Request, Response } from 'express';
+import { PrismaClient, OrderStatus, type ShirtSize, type ShirtColor, NotificationType } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { sendOrderStatusNotification, sendShippingNotification } from '../services/notification.js';
 
@@ -28,7 +28,7 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
     const take = Number(limit);
 
     // フィルタ条件の構築
-    let where: any = {};
+    const where: any = {};
 
     // ステータスフィルター
     if (status) {
