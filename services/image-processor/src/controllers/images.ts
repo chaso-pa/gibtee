@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { convertToGhibliStyle, withRetry } from '../services/openai.js';
 import { resizeImage } from '../utils/image.js';
 import { uploadBufferToS3, generateSignedUrl, getObjectFromS3 } from '../utils/s3.js';

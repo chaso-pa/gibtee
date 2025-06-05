@@ -1,6 +1,6 @@
 import sharp from 'sharp';
-import path from 'path';
-import fs from 'fs/promises';
+import path from 'node:path';
+import fs from 'node:fs/promises';
 import { logger } from '../utils/logger.js';
 
 // テンプレートパス（ESM環境では __dirname が使えないため、ファイルの絶対パスを取得）
@@ -16,8 +16,8 @@ const templatesDir = path.join(currentDir, 'assets', 'tshirt-templates');
  */
 export const generateTshirtPreview = async (
   designImageBuffer: Buffer,
-  color: string = 'white',
-  size: string = 'M'
+  color = 'white',
+  size = 'M'
 ): Promise<Buffer> => {
   try {
     logger.info(`Tシャツプレビュー生成開始: 色=${color}, サイズ=${size}`);
@@ -31,6 +31,7 @@ export const generateTshirtPreview = async (
     } catch (error) {
       // テンプレートが存在しない場合は白を使用
       logger.warn(`テンプレート ${color}.png が見つかりません。白を使用します。`);
+      // biome-ignore lint: reason
       color = 'white';
     }
 

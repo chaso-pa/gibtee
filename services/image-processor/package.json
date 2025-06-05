@@ -8,6 +8,7 @@
 		"dev": "tsx watch src/app.ts",
 		"test": "jest",
 		"lint": "biome lint ./src",
+		"check": "biome check --write ./src",
 		"format": "biome format --write ./src",
 		"format:check": "biome format --check ./src"
 	},

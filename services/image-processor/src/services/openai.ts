@@ -1,8 +1,8 @@
 import OpenAI, { toFile } from 'openai';
 import sharp from 'sharp';
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
@@ -99,7 +99,7 @@ export const convertToGhibliStyle = async (imageBuffer: Buffer): Promise<Buffer>
 export const withRetry = async <T>(
   operation: () => Promise<T>,
   retries: number = config.openai.maxRetries,
-  delay: number = 1000
+  delay = 1000
 ): Promise<T> => {
   try {
     return await operation();
