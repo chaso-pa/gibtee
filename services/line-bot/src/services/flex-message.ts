@@ -1,4 +1,4 @@
-import { FlexMessage, FlexContainer } from '@line/bot-sdk';
+import type { FlexMessage, FlexContainer } from '@line/bot-sdk';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -165,7 +165,7 @@ export const createImageConversionResultFlex = (originalImageUrl: string, ghibli
 /**
  * Tシャツプレビュー表示用のFlexメッセージを作成
  */
-export const createTshirtPreviewFlex = (previewImageUrl: string, color: string = 'white'): FlexMessage => {
+export const createTshirtPreviewFlex = (previewImageUrl: string, color = 'white'): FlexMessage => {
   logger.info('Tシャツプレビュー Flexメッセージ作成');
 
   // カラーに応じたバックグラウンドカラーを設定
@@ -1054,7 +1054,7 @@ export const createOrderConfirmationFlex = (orderData: {
                 },
                 {
                   type: 'text',
-                  text: `〒${orderData.postalCode}\n${orderData.prefecture}${orderData.city}${orderData.streetAddress}${orderData.buildingName ? '\n' + orderData.buildingName : ''}`,
+                  text: `〒${orderData.postalCode}\n${orderData.prefecture}${orderData.city}${orderData.streetAddress}${orderData.buildingName ? `\n${orderData.buildingName}` : ''}`,
                   size: 'md',
                   flex: 7,
                   wrap: true

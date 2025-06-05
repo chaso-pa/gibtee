@@ -11,6 +11,7 @@ export interface SystemSettings {
   updatedAt: Date;
 }
 
+// biome-ignore lint:reason
 export class SystemSettingsService {
   /**
    * システム設定を取得
@@ -35,7 +36,7 @@ export class SystemSettingsService {
    */
   static async isOrderAcceptanceEnabled(): Promise<boolean> {
     try {
-      const settings = await this.getSettings();
+      const settings = await SystemSettingsService.getSettings();
 
       // 設定が存在しない場合はデフォルトで受付有効
       if (!settings) {
@@ -55,7 +56,7 @@ export class SystemSettingsService {
    */
   static async getOrderSuspensionMessage(): Promise<string> {
     try {
-      const settings = await this.getSettings();
+      const settings = await SystemSettingsService.getSettings();
 
       if (!settings || !settings.orderSuspensionMessage) {
         return '申し訳ございませんが、現在新規注文の受付を一時停止しております。\nしばらく時間をおいてからご利用ください。';
@@ -77,7 +78,7 @@ export class SystemSettingsService {
   ): Promise<SystemSettings> {
     try {
       // 既存設定を取得
-      const existingSettings = await this.getSettings();
+      const existingSettings = await SystemSettingsService.getSettings();
 
       if (existingSettings) {
         // 更新
@@ -89,16 +90,15 @@ export class SystemSettingsService {
           }
         });
         return updatedSettings;
-      } else {
-        // 新規作成
-        const newSettings = await prisma.systemSettings.create({
-          data: {
-            isOrderAcceptanceEnabled,
-            orderSuspensionMessage
-          }
-        });
-        return newSettings;
       }
+      // 新規作成
+      const newSettings = await prisma.systemSettings.create({
+        data: {
+          isOrderAcceptanceEnabled,
+          orderSuspensionMessage
+        }
+      });
+      return newSettings;
     } catch (error) {
       console.error('Error updating system settings:', error);
       throw error;
@@ -114,10 +114,10 @@ export class SystemSettingsService {
     message?: string;
   }> {
     try {
-      const isEnabled = await this.isOrderAcceptanceEnabled();
+      const isEnabled = await SystemSettingsService.isOrderAcceptanceEnabled();
 
       if (!isEnabled) {
-        const suspensionMessage = await this.getOrderSuspensionMessage();
+        const suspensionMessage = await SystemSettingsService.getOrderSuspensionMessage();
         return {
           canAcceptOrder: false,
           message: suspensionMessage

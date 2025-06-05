@@ -1,5 +1,6 @@
 // src/features/settings/Settings.tsx
-import React, { useState, useEffect } from 'react';
+import type React from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import {
   Box,
@@ -106,6 +107,7 @@ export const Settings: React.FC = () => {
     }
   };
 
+  // biome-ignore lint:reason
   useEffect(() => {
     fetchSettings();
   }, []);

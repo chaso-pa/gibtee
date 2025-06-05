@@ -1,4 +1,4 @@
-import { FollowEvent, UnfollowEvent } from '@line/bot-sdk';
+import type { FollowEvent, UnfollowEvent } from '@line/bot-sdk';
 import { getUserProfile, sendTextMessage } from '../services/line.js';
 import { saveUserToDB, deactivateUser } from '../services/user.js';
 import { updateUserConversationState, ConversationState } from '../services/conversation.js';

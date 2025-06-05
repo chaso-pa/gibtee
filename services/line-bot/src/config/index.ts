@@ -1,12 +1,12 @@
 import dotenv from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 
 // 環境変数の読み込み
 dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env') });
 
 export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '3000', 10),
+  port: Number.parseInt(process.env.PORT || '3000', 10),
 
   // ロギング設定
   logging: {

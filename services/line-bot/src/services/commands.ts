@@ -3,7 +3,7 @@ import { logger } from '../utils/logger.js';
 import { getFAQs } from './faq-service.js';
 import { prisma } from '@/lib/prisma.js';
 import { formatOrderStatus, getOrderHistory } from './order-service.js';
-import { Order } from '@prisma/client';
+import type { Order } from '@prisma/client';
 
 /**
  * ヘルプコマンドを処理する
@@ -42,7 +42,7 @@ export const handleFaqCommand = async (userId: string): Promise<void> => {
 
     faqs.forEach((faq, index) => {
       if (index !== 0) {
-        faqMessage += `\n\n`;
+        faqMessage += '\n\n';
       }
       faqMessage += `${index + 1}. ${faq.question}\n`;
       faqMessage += `${faq.answer}`;

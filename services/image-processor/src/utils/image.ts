@@ -8,11 +8,7 @@ import { logger } from './logger.js';
  * @param maxHeight 最大高さ
  * @returns リサイズされた画像バッファ
  */
-export const resizeImage = async (
-  imageBuffer: Buffer,
-  maxWidth: number = 1024,
-  maxHeight: number = 1024
-): Promise<Buffer> => {
+export const resizeImage = async (imageBuffer: Buffer, maxWidth = 1024, maxHeight = 1024): Promise<Buffer> => {
   try {
     // 画像メタデータを取得
     const metadata = await sharp(imageBuffer).metadata();

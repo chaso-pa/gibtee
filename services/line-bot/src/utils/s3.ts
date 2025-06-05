@@ -17,7 +17,7 @@ const s3Client = new S3Client({
  */
 export const uploadBufferToS3 = async (
   buffer: Buffer,
-  originalFilename: string = 'image.jpg',
+  originalFilename = 'image.jpg',
   prefix: string = awsConfig.s3.imagePrefix
 ): Promise<string> => {
   try {
@@ -56,7 +56,7 @@ export const uploadBufferToS3 = async (
  * @param expiresIn 有効期限（秒）
  * @returns 署名付きURL
  */
-export const getS3SignedUrl = async (key: string, expiresIn: number = 3600): Promise<string> => {
+export const getS3SignedUrl = async (key: string, expiresIn = 3600): Promise<string> => {
   try {
     const command = new GetObjectCommand({
       Bucket: awsConfig.s3.bucket,

@@ -1,9 +1,9 @@
 // src/middleware/order-acceptance-check.ts
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { SystemSettingsService } from '../services/system-settings.js';
 import { sendTextMessage } from '../services/line.js';
 import { logger } from '../utils/logger.js';
-import { WebhookEvent } from '@line/bot-sdk';
+import type { WebhookEvent } from '@line/bot-sdk';
 
 /**
  * 注文受付状態をチェックする

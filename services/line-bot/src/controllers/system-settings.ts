@@ -1,5 +1,5 @@
 // src/controllers/system-settings.ts
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { SystemSettingsService } from '../services/system-settings.js';
 import { logger } from '../utils/logger.js';
 

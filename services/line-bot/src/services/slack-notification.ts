@@ -29,12 +29,11 @@ const sendSlackNotification = async (payload: {
     });
 
     if (response.status === 200) {
-      logger.info(`Slack notification sent successfully`);
+      logger.info('Slack notification sent successfully');
       return true;
-    } else {
-      logger.error(`Failed to send Slack notification: ${response.statusText}`);
-      return false;
     }
+    logger.error(`Failed to send Slack notification: ${response.statusText}`);
+    return false;
   } catch (error: any) {
     logger.error(`Error sending Slack notification: ${error.message}`);
     return false;
@@ -261,9 +260,9 @@ export const notifyError = async (title: string, errorMessage: string, details?:
     if (details) {
       try {
         if (typeof details === 'object') {
-          detailsText = '```' + JSON.stringify(details, null, 2) + '```';
+          detailsText = `\`\`\`${JSON.stringify(details, null, 2)}\`\`\``;
         } else {
-          detailsText = '```' + details.toString() + '```';
+          detailsText = `\`\`\`${details.toString()}\`\`\``;
         }
       } catch (e) {
         detailsText = '```(エラー詳細を変換できませんでした)```';

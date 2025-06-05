@@ -1,0 +1,209 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      line-bot: ${{ steps.changes.outputs.line-bot }}
+      admin-panel: ${{ steps.changes.outputs.admin-panel }}
+      image-processor: ${{ steps.changes.outputs.image-processor }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Get previous tag
+        id: prev-tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            # If no previous tag, compare with initial commit
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "prev-tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ steps.prev-tag.outputs.prev-tag }}
+          filters: |
+            line-bot:
+              - 'services/line-bot/**'
+            admin-panel:
+              - 'services/admin-panel/**'
+            image-processor:
+              - 'services/image-processor/**'
+
+  build-and-push:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [line-bot, admin-panel, image-processor]
+
+    steps:
+      - name: Check if service changed
+        id: check-changes
+        run: |
+          case "${{ matrix.service }}" in
+            line-bot)
+              echo "changed=${{ needs.detect-changes.outputs.line-bot }}" >> $GITHUB_OUTPUT
+              ;;
+            admin-panel)
+              echo "changed=${{ needs.detect-changes.outputs.admin-panel }}" >> $GITHUB_OUTPUT
+              ;;
+            image-processor)
+              echo "changed=${{ needs.detect-changes.outputs.image-processor }}" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Checkout code
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to dockerhub.chaso-pa.com
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: dockerhub.chaso-pa.com
+          username: ${{ secrets.DOCKERHUB_CHASO_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_CHASO_TOKEN }}
+
+      - name: Extract metadata
+        if: steps.check-changes.outputs.changed == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: dockerhub.chaso-pa.com/gibtee/${{ matrix.service }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        if: steps.check-changes.outputs.changed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: services/${{ matrix.service }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image digest
+        if: steps.check-changes.outputs.changed == 'true'
+
+        run: echo ${{ steps.build.outputs.digest }}
+
+  deployment-notification:
+    needs: [detect-changes, build-and-push]
+    if: always() && (needs.detect-changes.outputs.line-bot == 'true' || needs.detect-changes.outputs.admin-panel == 'true' || needs.detect-changes.outputs.image-processor == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack about deployment
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          SUCCESS_COUNT=0
+          FAILED_COUNT=0
+          SERVICES_STATUS=""
+
+          # Check if line-bot was built
+          if [ "${{ needs.detect-changes.outputs.line-bot }}" = "true" ]; then
+            if [ "${{ needs.build-and-push.result }}" = "success" ]; then
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              SERVICES_STATUS="${SERVICES_STATUS}✅ line-bot\n"
+            else
+              FAILED_COUNT=$((FAILED_COUNT + 1))
+              SERVICES_STATUS="${SERVICES_STATUS}❌ line-bot\n"
+            fi
+          fi
+
+          # Check if admin-panel was built
+          if [ "${{ needs.detect-changes.outputs.admin-panel }}" = "true" ]; then
+            if [ "${{ needs.build-and-push.result }}" = "success" ]; then
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              SERVICES_STATUS="${SERVICES_STATUS}✅ admin-panel\n"
+            else
+              FAILED_COUNT=$((FAILED_COUNT + 1))
+              SERVICES_STATUS="${SERVICES_STATUS}❌ admin-panel\n"
+            fi
+          fi
+
+          # Check if image-processor was built
+          if [ "${{ needs.detect-changes.outputs.image-processor }}" = "true" ]; then
+            if [ "${{ needs.build-and-push.result }}" = "success" ]; then
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              SERVICES_STATUS="${SERVICES_STATUS}✅ image-processor\n"
+            else
+              FAILED_COUNT=$((FAILED_COUNT + 1))
+              SERVICES_STATUS="${SERVICES_STATUS}❌ image-processor\n"
+            fi
+          fi
+
+          if [ $FAILED_COUNT -eq 0 ]; then
+            ICON="🚀"
+            STATUS="Successfully deployed"
+          else
+            ICON="⚠️"
+            STATUS="Deployment completed with issues"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{
+              \"text\": \"$ICON $STATUS: ${{ steps.tag.outputs.tag }}\",
+              \"blocks\": [
+                {
+                  \"type\": \"section\",
+                  \"text\": {
+                    \"type\": \"mrkdwn\",
+                    \"text\": \"*$ICON gibtee deployment: ${{ steps.tag.outputs.tag }}*\"
+                  }
+                },
+                {
+                  \"type\": \"section\",
+                  \"fields\": [
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Services Status:*\n$SERVICES_STATUS\"
+                    },
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Registry:*\ndockerhub.chaso-pa.com\"
+                    }
+                  ]
+                },
+                {
+                  \"type\": \"actions\",
+                  \"elements\": [
+                    {
+                      \"type\": \"button\",
+                      \"text\": {
+                        \"type\": \"plain_text\",
+                        \"text\": \"View Actions\"
+                      },
+                      \"url\": \"https://github.com/chaso-pa/gibtee/actions\"
+                    }
+                  ]
+                }
+              ]
+            }" \
+            $SLACK_WEBHOOK_URL

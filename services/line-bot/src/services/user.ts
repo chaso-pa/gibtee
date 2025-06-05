@@ -1,4 +1,4 @@
-import { Profile } from '@line/bot-sdk';
+import type { Profile } from '@line/bot-sdk';
 import { prisma } from '../lib/prisma.js'; // .js拡張子に注意
 import { logger } from '../utils/logger.js';
 

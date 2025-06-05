@@ -6,10 +6,12 @@
 		"build": "tsc && tsc-alias",
 		"start": "node dist/app.js",
 		"dev": "prisma generate && tsx watch src/app.ts",
-		"lint": "eslint . --ext .ts",
 		"test": "jest",
 		"setup-rich-menu": "tsx scripts/setup-rich-menu.ts",
-		"format": "biome format --write ./src"
+		"lint": "biome lint ./src",
+		"lint:write": "biome lint --write ./src",
+		"format": "biome format --write ./src",
+		"format:check": "biome format --check ./src"
 	},
 	"license": "MIT",
 	"dependencies": {
@@ -32,6 +34,7 @@
 		"winston": "^3.17.0"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
 		"@types/cors": "^2.8.17",
 		"@types/express": "^5.0.1",
 		"@types/jsonwebtoken": "^9.0.5",

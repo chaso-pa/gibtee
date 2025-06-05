@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { prisma } from '@/lib/prisma.js';
-import { NotificationType } from '@prisma/client';
+import type { NotificationType } from '@prisma/client';
 
 export const getNotifications = async (req: Request, res: Response) => {
   try {
@@ -21,7 +21,7 @@ export const getNotifications = async (req: Request, res: Response) => {
     const take = Number(limit);
 
     // フィルタ条件の構築
-    let where: any = {};
+    const where: any = {};
 
     if (type) {
       where.type = type as NotificationType;

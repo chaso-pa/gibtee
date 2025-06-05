@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 export const ProtectedRoute: React.FC = () => {

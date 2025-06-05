@@ -1,4 +1,4 @@
-import { MessageEvent, TextEventMessage, ImageEventMessage } from '@line/bot-sdk';
+import type { MessageEvent, TextEventMessage, ImageEventMessage } from '@line/bot-sdk';
 import { logger } from '../utils/logger.js';
 import { sendTextMessage } from '../services/line.js';
 import {
@@ -135,11 +135,6 @@ const handleTextMessage = async (
       // 初回挨拶後は待機状態へ
       await sendTextMessage(userId, 'ジブリ風に変換したい写真を送ってください！');
       await updateUserConversationState(userId, ConversationState.WAITING);
-      break;
-
-    case ConversationState.QUANTITY_SELECTION:
-      // 数量選択の処理
-      await handleQuantitySelection(userId, text, context);
       break;
 
     case ConversationState.ADDRESS_INPUT:
@@ -352,10 +347,12 @@ const handleSizeSelection = async (userId: string, text: string, context: any): 
       await sendTextMessage(userId, '別の写真を送ってください！');
       await updateUserConversationState(userId, ConversationState.WAITING);
       return;
-    } else if (text === '色を変更する') {
+    }
+    if (text === '色を変更する') {
       await handleColorSelectionRequest(userId, context);
       return;
-    } else if (!selectedSize) {
+    }
+    if (!selectedSize) {
       // 有効なサイズが選択されていない場合
       await sendTextMessage(userId, '有効なサイズを選択してください。');
       return;
@@ -401,10 +398,10 @@ const handleQuantitySelection = async (userId: string, text: string, context: an
       return;
     }
 
-    const quantity = parseInt(quantityMatch[0], 10);
+    const quantity = Number.parseInt(quantityMatch[0], 10);
 
     // 数量の検証
-    if (isNaN(quantity) || quantity < 1 || quantity > 5) {
+    if (Number.isNaN(quantity) || quantity < 1 || quantity > 5) {
       await sendTextMessage(userId, '数量は1〜5の間で指定してください。');
       return;
     }
@@ -431,10 +428,7 @@ const handleQuantitySelection = async (userId: string, text: string, context: an
     // 注文内容の確認メッセージ
     await sendTextMessage(
       userId,
-      `数量: ${quantity}枚\n` +
-        `単価: ${unitPrice.toLocaleString()}円\n` +
-        `合計: ${totalPrice.toLocaleString()}円（税込）\n\n` +
-        `次に配送先情報を入力していただきます。`
+      `数量: ${quantity}枚\n単価: ${unitPrice.toLocaleString()}円\n合計: ${totalPrice.toLocaleString()}円（税込）\n\n次に配送先情報を入力していただきます。`
     );
 
     // 配送先入力案内を表示

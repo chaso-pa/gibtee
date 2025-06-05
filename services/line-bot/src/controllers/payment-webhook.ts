@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { checkStripeSessionStatus, handleStripeWebhook } from '../services/payment.js';
 import { sendTextMessage } from '../services/line.js';
 import { getUserByOrderId } from '../services/conversation.js';
@@ -82,7 +82,7 @@ export const stripeWebhook = async (req: Request, res: Response): Promise<void> 
         await notifyPaymentComplete(payment.order.orderNumber, PaymentMethod.CREDIT_CARD, payment.amount);
 
         // LINEに決済完了通知を送信
-        if (payment.order.user && payment.order.user.lineUserId) {
+        if (payment.order.user?.lineUserId) {
           const completedFlex = createPaymentCompletedFlex(payment.order.orderNumber || '');
           await lineClient.pushMessage(payment.order.user.lineUserId, completedFlex);
 
@@ -163,7 +163,7 @@ export const stripeWebhook = async (req: Request, res: Response): Promise<void> 
         });
 
         // LINEに決済失敗通知を送信
-        if (payment.order.user && payment.order.user.lineUserId) {
+        if (payment.order.user?.lineUserId) {
           // TODO: 決済失敗用のflexをつくる
         }
 
@@ -186,9 +186,9 @@ export const stripeWebhook = async (req: Request, res: Response): Promise<void> 
 export const stripeSuccess = async (req: Request, res: Response): Promise<void> => {
   try {
     const sessionId = req.query.session_id as string;
-    const orderId = parseInt(req.query.order_id as string);
+    const orderId = Number.parseInt(req.query.order_id as string);
 
-    if (!sessionId || isNaN(orderId)) {
+    if (!sessionId || Number.isNaN(orderId)) {
       logger.error('無効なパラメータです');
       res.status(400).send('無効なパラメータです');
       return;
@@ -219,9 +219,9 @@ export const stripeSuccess = async (req: Request, res: Response): Promise<void> 
  */
 export const stripeCancel = async (req: Request, res: Response): Promise<void> => {
   try {
-    const orderId = parseInt(req.query.order_id as string);
+    const orderId = Number.parseInt(req.query.order_id as string);
 
-    if (isNaN(orderId)) {
+    if (Number.isNaN(orderId)) {
       logger.error('無効なパラメータです');
       res.status(400).send('無効なパラメータです');
       return;
@@ -230,7 +230,7 @@ export const stripeCancel = async (req: Request, res: Response): Promise<void> =
     // ユーザーを取得
     const user = await getUserByOrderId(orderId);
 
-    if (user && user.lineUserId) {
+    if (user?.lineUserId) {
       // キャンセルメッセージをLINEに送信
       await sendTextMessage(
         user.lineUserId,

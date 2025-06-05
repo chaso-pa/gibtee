@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { PrismaClient, OrderStatus, ShirtSize, ShirtColor, NotificationType } from '@prisma/client';
+import type { Request, Response } from 'express';
+import { PrismaClient, OrderStatus, type ShirtSize, type ShirtColor, NotificationType } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { sendOrderStatusNotification, sendShippingNotification } from '../services/notification.js';
 
@@ -28,7 +28,7 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
     const take = Number(limit);
 
     // フィルタ条件の構築
-    let where: any = {};
+    const where: any = {};
 
     // ステータスフィルター
     if (status) {
@@ -294,7 +294,7 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
     res.status(200).json({
       message: '注文ステータスを更新しました',
       order: result.updatedOrder,
-      notified: notifyCustomer && result.lineUserId ? true : false
+      notified: !!(notifyCustomer && result.lineUserId)
     });
   } catch (error) {
     console.error('注文ステータス更新エラー:', error);
@@ -438,7 +438,7 @@ export const updateOrderShipping = async (req: Request, res: Response): Promise<
     res.status(200).json({
       message: '配送情報を更新しました',
       order: result.updatedOrder,
-      notified: notifyCustomer && result.lineUserId ? true : false
+      notified: !!(notifyCustomer && result.lineUserId)
     });
   } catch (error) {
     console.error('配送情報更新エラー:', error);

@@ -1,4 +1,4 @@
-import { Client, ClientConfig, MiddlewareConfig } from '@line/bot-sdk';
+import { Client, type ClientConfig, type MiddlewareConfig } from '@line/bot-sdk';
 import { config } from './index.js';
 
 // LINE SDKクライアント設定
