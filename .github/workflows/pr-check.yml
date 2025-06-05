@@ -147,8 +147,8 @@ jobs:
 
       - name: Build Docker image
         if: steps.check-changes.outputs.changed == 'true'
-        working-directory: services/${{ matrix.service }}
         uses: docker/build-push-action@v6
+        working-directory: services/${{ matrix.service }}
         with:
           context: .
           push: false
