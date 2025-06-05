@@ -30,7 +30,6 @@ jobs:
 
   lint-and-format:
     needs: detect-changes
-    fail-fast: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
