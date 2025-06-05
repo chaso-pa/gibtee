@@ -148,9 +148,8 @@ jobs:
       - name: Build Docker image
         if: steps.check-changes.outputs.changed == 'true'
         uses: docker/build-push-action@v6
-        working-directory: services/${{ matrix.service }}
         with:
-          context: .
+          context: services/${{ matrix.service }}
           push: false
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
