@@ -153,5 +153,5 @@ jobs:
           push: false
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
-          cache-from: type:=gha
+          cache-from: type=gha
           cache-to: type=gha
