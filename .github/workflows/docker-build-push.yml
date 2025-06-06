@@ -105,7 +105,6 @@ jobs:
 
       - name: Image digest
         if: steps.check-changes.outputs.changed == 'true'
-
         run: echo ${{ steps.build.outputs.digest }}
 
   deployment-notification:
