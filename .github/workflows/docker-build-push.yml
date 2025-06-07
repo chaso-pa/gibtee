@@ -20,11 +20,13 @@ jobs:
       - name: Get previous tag
         id: prev-tag
         run: |
+          git rev-list HEAD
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
           if [ -z "$PREV_TAG" ]; then
             # If no previous tag, compare with initial commit
             PREV_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
+          echo $PREV_TAG
           echo "prev-tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
       - uses: dorny/paths-filter@v3
