@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          fetch-depth: ${{ emv.fetch_depth }}
+          fetch-depth: ${{ env.fetch_depth }}
           fetch-tags: true
 
       - name: Get previous tag
