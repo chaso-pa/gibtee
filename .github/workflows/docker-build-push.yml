@@ -87,7 +87,6 @@ jobs:
           tags: |
             type=ref,event=tag
             type=raw,value=latest
-            type=sha,prefix={{branch}}-
 
       - name: Build and push Docker image
         if: steps.check-changes.outputs.changed == 'true'
