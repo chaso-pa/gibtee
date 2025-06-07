@@ -15,22 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Get previous tag
         id: prev-tag
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
-          if [ -z "$PREV_TAG" ]; then
-            # If no previous tag, compare with initial commit
-            PREV_TAG=$(git rev-list --merges --max-parents=0 HEAD)
-          fi
-          echo "prev-tag=$PREV_TAG" >> $GITHUB_OUTPUT
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 0.0.1 # Optional fallback tag to use when no tag can be found
+          prefix: v
 
       - uses: dorny/paths-filter@v3
         id: changes
         with:
-          base: ${{ steps.prev-tag.outputs.prev-tag }}
+          base: ${{ steps.prev-tag.outputs.tag }}
           filters: |
             line-bot:
               - 'services/line-bot/**'
