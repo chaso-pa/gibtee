@@ -50,9 +50,9 @@ jobs:
       - name: Check if service changed
         id: check-changes
         run: |
-          if [[ "${{ steps.changes.outputs.line-bot }}" == "true" || \
-                "${{ steps.changes.outputs.admin-panel }}" == "true" || \
-                "${{ steps.changes.outputs.image-processor }}" == "true" ]]; then
+          if [[ "${{ needs.detect-changes.outputs.line-bot }}" == "true" || \
+                "${{ needs.detect-changes.outputs.admin-panel }}" == "true" || \
+                "${{ needs.detect-changes.outputs.image-processor }}" == "true" ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
