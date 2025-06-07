@@ -17,18 +17,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 現在のタグを取得
+      - name: get current tag
         id: current-tag
         run: |
           echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
 
-      - name: 1つ前のタグを取得
+      - name: get previous tag
         id: prev-tag
         run: |
           CURRENT_TAG="${{ steps.current-tag.outputs.tag }}"
           echo "Current tag: $CURRENT_TAG"
           # すべてのタグをソートして、現在のタグの1つ前を取得
-          PREV_TAG=$(git tag --sort=v:refname | grep -v "^$CURRENT_TAG$" | head -n 1)
+          PREV_TAG=$(git tag --sort -v:refname | grep -v "^$CURRENT_TAG$" | head -n 1)
           echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
       - uses: dorny/paths-filter@v3
